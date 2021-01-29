@@ -91,13 +91,15 @@ timer_elapsed (int64_t then) {
 void
 timer_sleep (int64_t ticks) {
 	int64_t start = timer_ticks ();
-
+	enum intr_level old_level;
     struct thread *cur = thread_current ();
-
+	
 	ASSERT (intr_get_level () == INTR_ON);
 //	while (timer_elapsed (start) < ticks)
 //		thread_yield (); //  CPU를 양보하고, thread를 ready_list에 삽입
-    list_push_back(&sleep_list,&cur->elem)
+	//old_level = intr_disable ();
+    //list_push_back(&sleep_list,&cur->elem);
+	thread_sleep(ticks);
 }
 
 /* Suspends execution for approximately MS milliseconds. */

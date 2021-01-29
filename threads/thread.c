@@ -421,6 +421,7 @@ init_thread(struct thread *t, const char *name, int priority) {
 //=======================================================
 void thread_sleep(int64_t ticks) /* 실행 중인 스레드를 슬립으로 만듬 */
 {
+    enum intr_level old_level;
     struct thread *t = thread_current();
     if (thread_current() != idle_thread) { //현재 스레드가 idle 스레드가 아닐경우
         old_level = intr_disable();
@@ -616,4 +617,36 @@ allocate_tid(void) {
     lock_release(&tid_lock);
 
     return tid;
+}
+
+
+/* sleep list의 모든 entry 를 순회하며 다음과 같은 작업을 수행한다.
+현재 tick이 깨워야 할 tick 보다 크거나 같다면 슬립 큐에서 제거하고
+unblock 한다.
+작다면 update_next_tick_to_awake() 를 호출한다.
+*/
+void thread_awake(int64_t ticks){ 
+    int64_t update = INT64_MAX;
+    for (struct list_elem *e = list_begin(&sleep_list); e != list_end(&sleep_list); e=list_next(e)){
+        struct thread *t = list_entry(e, struct thread, elem);
+        if (t->wakeup_tick <= ticks){
+            list_remove(e);
+            thread_unblock(t);
+            //update_next_tick_to_awake(ticks);
+        }
+        else{
+        //우린 똑똑하게 여기서 next_tick_to_awake를 update한다.
+            if (update > t->wakeup_tick)
+                update = t->wakeup_tick;
+        }
+    }
+}
+
+// for (e = list_begin (&foo_list); e != list_end (&foo_list);
+//  e = list_next (e)) {
+//    struct foo *f = list_entry (e, struct foo, elem);
+//    ...do something with f...
+//  }
+int64_t get_next_tick_to_awake(void){/* thread.c의 next_tick_to_awake 반환 */
+    return next_tick_to_awake;
 }
