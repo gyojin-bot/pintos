@@ -9,6 +9,8 @@
 #include "vm/vm.h"
 #endif
 
+static struct list sleep_list;
+static int64_t next_tick_to_awake;
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -107,6 +109,8 @@ struct thread {
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
+
+    int64_t wakeup_tick /* 깨어 나야할 tick 저장 */
 };
 
 /* If false (default), use round-robin scheduler.
@@ -144,3 +148,8 @@ int thread_get_load_avg (void);
 void do_iret (struct intr_frame *tf);
 
 #endif /* threads/thread.h */
+
+void thread_sleep(int64_t ticks); /* 실행 중인 스레드를 슬립으로 만듬 */
+void thread_awake(int64_t ticks); /* 슬립큐에서 깨워야할 스레드를 깨움 */
+void update_next_tick_to_awake(int64_t ticks);/*최소 틱을 가진 스레드 저장 */
+int64_t get_next_tick_to_awake(void);/* thread.c의 next_tick_to_awake 반환 */
