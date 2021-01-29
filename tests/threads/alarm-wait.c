@@ -12,6 +12,8 @@
 
 static void test_sleep (int thread_cnt, int iterations);
 
+
+
 void
 test_alarm_single (void) 
 {
@@ -50,6 +52,8 @@ static void sleeper (void *);
 static void
 test_sleep (int thread_cnt, int iterations) 
 {
+
+
   struct sleep_test test;
   struct sleep_thread *threads;
   int *output, *op;

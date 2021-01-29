@@ -6,13 +6,26 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f7e1933b-2c3b-496a-b5e3-c36782e55225" name="Default Changelist" comment="" />
+    <list default="true" id="f7e1933b-2c3b-496a-b5e3-c36782e55225" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/pintos.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/sshConfigs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/webServers.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/devices/timer.c" beforeDir="false" afterPath="$PROJECT_DIR$/devices/timer.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/include/threads/thread.h" beforeDir="false" afterPath="$PROJECT_DIR$/include/threads/thread.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/kernel/list.c" beforeDir="false" afterPath="$PROJECT_DIR$/lib/kernel/list.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/threads/alarm-wait.c" beforeDir="false" afterPath="$PROJECT_DIR$/tests/threads/alarm-wait.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/threads/thread.c" beforeDir="false" afterPath="$PROJECT_DIR$/threads/thread.c" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="ClangdSettings">
+    <option name="clangTidyViaClangd" value="false" />
     <option name="formatViaClangd" value="false" />
   </component>
   <component name="Git.Settings">
@@ -50,6 +63,7 @@
       <workItem from="1611815140587" duration="295000" />
       <workItem from="1611815468873" duration="496000" />
       <workItem from="1611815968134" duration="1524000" />
+      <workItem from="1611821888081" duration="16395000" />
     </task>
     <servers />
   </component>
@@ -66,5 +80,6 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
 </project>

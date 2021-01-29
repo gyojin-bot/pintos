@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="b8e32d64-cfba-45dc-9402-688e31334851" name="pintos">
+        <fileTransfer rootFolder="/home/phone" accessType="SFTP" host="3.36.152.14" port="22" sshConfigId="87bb0760-22cd-4dfa-b505-52922f7d204b" sshConfig="phone@3.36.152.14:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

@@ -92,9 +92,12 @@ void
 timer_sleep (int64_t ticks) {
 	int64_t start = timer_ticks ();
 
+    struct thread *cur = thread_current ();
+
 	ASSERT (intr_get_level () == INTR_ON);
-	while (timer_elapsed (start) < ticks)
-		thread_yield ();
+//	while (timer_elapsed (start) < ticks)
+//		thread_yield (); //  CPU를 양보하고, thread를 ready_list에 삽입
+    list_push_back(&sleep_list,&cur->elem)
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -120,12 +123,16 @@ void
 timer_print_stats (void) {
 	printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
+    if (ticks>=get_next_tick_to_awake()){
+        thread_awake(ticks);
+        /* 매 tick마다 sleep queue 에서 깨어날 thread가 있는지 확인하여, 깨우는 함수를 호출하도록 한다. */
+    }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
@@ -155,6 +162,7 @@ too_many_loops (unsigned loops) {
    to predict. */
 static void NO_INLINE
 busy_wait (int64_t loops) {
+
 	while (loops-- > 0)
 		barrier ();
 }
