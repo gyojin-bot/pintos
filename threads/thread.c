@@ -29,7 +29,8 @@
    that are ready to run but not actually running. */
 static struct list ready_list; //Ready 상태의 thread를 관리하는 lis
 
-
+static struct list sleep_list;
+static int64_t next_tick_to_awake;
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -421,13 +422,21 @@ init_thread(struct thread *t, const char *name, int priority) {
 //=======================================================
 void thread_sleep(int64_t ticks) /* 실행 중인 스레드를 슬립으로 만듬 */
 {
+    // printf("strat thread sleep!!\n");
     enum intr_level old_level;
-    struct thread *t = thread_current();
-    if (thread_current() != idle_thread) { //현재 스레드가 idle 스레드가 아닐경우
+    struct thread *curr = thread_current();
+    // printf("TID :: %d\n", curr->tid);
+    if (curr != idle_thread) { //현재 스레드가 idle 스레드가 아닐경우
         old_level = intr_disable();
+        // printf("들어가나요\n");
+        curr->wakeup_tick = ticks; //깨어나야 할 ticks을 저장,
+        list_push_back(&sleep_list, &curr->elem); /* 현재 스레드를 슬립 큐에 삽입한 후에 스케줄한다. */
+        for (struct list_elem *e = list_begin(&sleep_list); e != list_end(&sleep_list); e=list_next(e)){
+            struct thread *t = list_entry(e, struct thread, elem);
+            // printf("TID :: %d\n", t->tid);
+        }
         thread_block(); //thread의 상태를 BLOCKED로 바꾸고
-        t->wakeup_tick = ticks; //깨어나야 할 ticks을 저장,
-        list_push_back(&sleep_list, &(t->elem)); /* 현재 스레드를 슬립 큐에 삽입한 후에 스케줄한다. */
+        // do_schedule(THREAD_READY);
         intr_set_level(old_level); /* 해당 과정중에는 인터럽트를 받아들이지 않는다. */
     }
 }
@@ -626,16 +635,20 @@ unblock 한다.
 작다면 update_next_tick_to_awake() 를 호출한다.
 */
 void thread_awake(int64_t ticks){ 
+    // printf("start awake!!!\n");
     int64_t update = INT64_MAX;
-    for (struct list_elem *e = list_begin(&sleep_list); e != list_end(&sleep_list); e=list_next(e)){
+    for (struct list_elem *e = list_begin(&sleep_list); e != list_end(&sleep_list); ){
         struct thread *t = list_entry(e, struct thread, elem);
+        // printf("wakeup tick :: %d\n", t->wakeup_tick);
+        // printf("ticks :: %d\n", ticks);
         if (t->wakeup_tick <= ticks){
-            list_remove(e);
+            e = list_remove(e);
             thread_unblock(t);
             //update_next_tick_to_awake(ticks);
         }
         else{
         //우린 똑똑하게 여기서 next_tick_to_awake를 update한다.
+            e = list_next(e);
             if (update > t->wakeup_tick)
                 update = t->wakeup_tick;
         }
