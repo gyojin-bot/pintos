@@ -254,7 +254,7 @@ thread_unblock(struct thread *t) {
     ASSERT(t->status == THREAD_BLOCKED);
     //list_push_back(&ready_list, &t->elem);
     list_insert_ordered(&ready_list, &t->elem, cmp_priority, NULL); // 준비큐로 넣을 때 우선순위 정렬되어 들어감
-    printf("ready que priority :: %d\n", next_thread_to_run()->priority);
+    //printf("ready que priority :: %d\n", list_begin(&ready_list)->priority);
     t->status = THREAD_READY;
     intr_set_level(old_level);
 }
