@@ -134,7 +134,6 @@ thread_start(void) {
     struct semaphore idle_started;
     sema_init(&idle_started, 0);
     thread_create("idle", PRI_MIN, idle, &idle_started);
-
     /* Start preemptive thread scheduling. */
     intr_enable();
 
@@ -214,11 +213,14 @@ thread_create(const char *name, int priority,
     t->tf.eflags = FLAG_IF;
 
     /* Add to run queue. */
+    //printf("thread %s creating\n", t->name);
+    //printf("thread %s current\n", thread_current()->name);
+    //printf("thread %s priority\n", thread_current()->priority);
+    // if (t->priority > thread_current()->priority){
+    //     thread_yield();}
+    // else{
+    //     printf("thread %s yield happend\n", t->name);
     thread_unblock(t);
-
-    if (t->priority > thread_current()->priority)
-        thread_yield();
-
     return tid;
 }
 
@@ -254,7 +256,7 @@ thread_unblock(struct thread *t) {
     ASSERT(t->status == THREAD_BLOCKED);
     //list_push_back(&ready_list, &t->elem);
     list_insert_ordered(&ready_list, &t->elem, cmp_priority, NULL); // 준비큐로 넣을 때 우선순위 정렬되어 들어감
-    //printf("ready que priority :: %d\n", list_begin(&ready_list)->priority);
+    //printf("%s to ready que :: %d\n", t->name, t->priority);
     t->status = THREAD_READY;
     intr_set_level(old_level);
 }
@@ -341,6 +343,7 @@ void thread_yield(void) {
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority(int new_priority) {
+    //printf("current priority %d, new priority : %d\n", thread_current()->priority, new_priority);
     thread_current()->priority = new_priority;
 
     test_max_priority();
@@ -356,10 +359,8 @@ thread_get_priority(void) {
 void test_max_priority (void)
 {
     enum intr_level old_level;
-    if (thread_current()->priority < next_thread_to_run()->priority)
-        old_level = intr_disable();
-        do_schedule(THREAD_READY);
-        intr_set_level(old_level);
+    if (cmp_priority(&thread_current()->elem , list_begin(&ready_list), NULL))
+        thread_yield();
 }
 
 /* Sets the current thread's nice value to NICE. */
