@@ -216,6 +216,9 @@ thread_create(const char *name, int priority,
     /* Add to run queue. */
     thread_unblock(t);
 
+    if (t->priority > thread_current()->priority)
+        thread_yield();
+
     return tid;
 }
 
@@ -249,10 +252,27 @@ thread_unblock(struct thread *t) {
 
     old_level = intr_disable();
     ASSERT(t->status == THREAD_BLOCKED);
-    list_push_back(&ready_list, &t->elem);
+    //list_push_back(&ready_list, &t->elem);
+    list_insert_ordered(&ready_list, &t->elem, cmp_priority, NULL); // 준비큐로 넣을 때 우선순위 정렬되어 들어감
+    printf("ready que priority :: %d\n", next_thread_to_run()->priority);
     t->status = THREAD_READY;
     intr_set_level(old_level);
 }
+
+/* 인자로 주어진 스레드들의 우선순위를 비교 */
+bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+{
+    struct thread *threadA = list_entry(a, struct thread, elem);
+    struct thread *threadB = list_entry(b, struct thread, elem);
+
+    if (threadA->priority >= threadB->priority){
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
 
 /* Returns the name of the running thread. */
 const char *
@@ -312,7 +332,8 @@ void thread_yield(void) {
     //블랙된 스레드를 실행 대기 상태로 전
     old_level = intr_disable(); // 인터럽트를 비활성하고 이전 인터럽트의 상태를 반환
     if (curr != idle_thread) //현재 실행되고 있던 스레드가 아이들 스래드는 무조건 돌아가는 친구임
-        list_push_back(&ready_list, &curr->elem); // 주어진 entry를 list의 마지막에 삽입
+        //list_push_back(&ready_list, &curr->elem); // 주어진 entry를 list의 마지막에 삽입
+        list_insert_ordered(&ready_list, &curr->elem, cmp_priority, NULL); // 다시 준비큐로 돌아갈때 우선순위 정렬되어 들어감
     do_schedule(THREAD_READY); //컨텍스트 스위치 작업을 수행
     intr_set_level(old_level); //인자로 전달된 인터럽트 상태로 인터럽트를 설정 하고 이전 인터럽트 상태를 반환
 }
@@ -321,12 +342,24 @@ void thread_yield(void) {
 void
 thread_set_priority(int new_priority) {
     thread_current()->priority = new_priority;
+
+    test_max_priority();
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority(void) {
     return thread_current()->priority;
+}
+
+/* 현재 수행중인 스레드와 가장 높은 우선순위의 스레드의 우선순위를 비교하여 스케줄링 */
+void test_max_priority (void)
+{
+    enum intr_level old_level;
+    if (thread_current()->priority < next_thread_to_run()->priority)
+        old_level = intr_disable();
+        do_schedule(THREAD_READY);
+        intr_set_level(old_level);
 }
 
 /* Sets the current thread's nice value to NICE. */
