@@ -213,14 +213,14 @@ thread_create(const char *name, int priority,
     t->tf.eflags = FLAG_IF;
 
     /* Add to run queue. */
+    thread_unblock(t);
     //printf("thread %s creating\n", t->name);
     //printf("thread %s current\n", thread_current()->name);
     //printf("thread %s priority\n", thread_current()->priority);
-    // if (t->priority > thread_current()->priority){
-    //     thread_yield();}
+    if (priority > thread_get_priority())
+        thread_yield();
     // else{
     //     printf("thread %s yield happend\n", t->name);
-    thread_unblock(t);
     return tid;
 }
 
@@ -267,7 +267,7 @@ bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *a
     struct thread *threadA = list_entry(a, struct thread, elem);
     struct thread *threadB = list_entry(b, struct thread, elem);
 
-    if (threadA->priority >= threadB->priority){
+    if (threadA->priority > threadB->priority){
         return 1;
     }
     else {
@@ -345,7 +345,6 @@ void
 thread_set_priority(int new_priority) {
     //printf("current priority %d, new priority : %d\n", thread_current()->priority, new_priority);
     thread_current()->priority = new_priority;
-
     test_max_priority();
 }
 
@@ -358,9 +357,10 @@ thread_get_priority(void) {
 /* 현재 수행중인 스레드와 가장 높은 우선순위의 스레드의 우선순위를 비교하여 스케줄링 */
 void test_max_priority (void)
 {
-    enum intr_level old_level;
-    if (cmp_priority(&thread_current()->elem , list_begin(&ready_list), NULL))
+
+    if (cmp_priority(list_begin(&ready_list), &thread_current()->elem, NULL)){
         thread_yield();
+    }
 }
 
 /* Sets the current thread's nice value to NICE. */
