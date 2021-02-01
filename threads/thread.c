@@ -455,7 +455,7 @@ init_thread(struct thread *t, const char *name, int priority) {
 
     t->init_priority = priority;
     // lock_init(t->wait_on_lock);
-    // list_init(&t->donations);
+    list_init(&t->donations);
     // struct list_elem donation_elem;
 }
 
@@ -718,7 +718,7 @@ void remove_with_lock(struct lock *lock)
 {
     for(struct list_elem *e = list_begin(&thread_current()->donations);
         e != list_end(&thread_current()->donations);){
-            struct thread *t = list_entry(e, struct thread, elem);
+            struct thread *t = list_entry(e, struct thread, donation_elem);
             if (t->wait_on_lock == lock){
                 e = list_remove(e);
             }
@@ -730,9 +730,15 @@ void remove_with_lock(struct lock *lock)
 
 void refresh_priority(void)
 {
-    thread_current()->priority = thread_current()->init_priority;
-    list_sort(&thread_current()->donations, cmp_priority, NULL);
-    struct thread *t = list_entry(list_begin(&thread_current()->donations), struct thread, elem);
-    if (thread_current()->priority < t->priority)
-        thread_current()->priority = t->priority;
+    struct thread *curr = thread_current();
+    curr->priority = curr->init_priority;
+    if (!list_empty(&curr->donations)){
+        list_sort(&thread_current()->donations, cmp_priority, NULL);
+        struct thread *comp = list_entry(list_begin(&curr->donations), struct thread, donation_elem);
+        if (comp->priority > curr->priority){
+
+            curr->priority = comp->priority;
+        }
+
+    }
 }
