@@ -344,7 +344,8 @@ void thread_yield(void) {
 void
 thread_set_priority(int new_priority) {
     //printf("current priority %d, new priority : %d\n", thread_current()->priority, new_priority);
-    thread_current()->priority = new_priority;
+    thread_current()->init_priority = new_priority;
+    refresh_priority();
     test_max_priority();
 }
 
@@ -451,6 +452,11 @@ init_thread(struct thread *t, const char *name, int priority) {
     t->tf.rsp = (uint64_t) t + PGSIZE - sizeof(void *);
     t->priority = priority;
     t->magic = THREAD_MAGIC;
+
+    t->init_priority = priority;
+    // lock_init(t->wait_on_lock);
+    // list_init(&t->donations);
+    // struct list_elem donation_elem;
 }
 
 //=======================================================
@@ -696,4 +702,37 @@ void thread_awake(int64_t ticks){
 //  }
 int64_t get_next_tick_to_awake(void){/* thread.c의 next_tick_to_awake 반환 */
     return next_tick_to_awake;
+}
+
+void donate_priority(void)
+{
+    struct thread *curr;
+    curr = thread_current()->wait_on_lock->holder;
+    while (curr->wait_on_lock != NULL){
+        curr = curr->wait_on_lock->holder;
+        }
+    curr->priority = thread_current()->priority;
+}
+
+void remove_with_lock(struct lock *lock)
+{
+    for(struct list_elem *e = list_begin(&thread_current()->donations);
+        e != list_end(&thread_current()->donations);){
+            struct thread *t = list_entry(e, struct thread, elem);
+            if (t->wait_on_lock == lock){
+                e = list_remove(e);
+            }
+            else {
+                e = list_next(e);
+            }
+        }
+}
+
+void refresh_priority(void)
+{
+    thread_current()->priority = thread_current()->init_priority;
+    list_sort(&thread_current()->donations, cmp_priority, NULL);
+    struct thread *t = list_entry(list_begin(&thread_current()->donations), struct thread, elem);
+    if (thread_current()->priority < t->priority)
+        thread_current()->priority = t->priority;
 }
