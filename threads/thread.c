@@ -709,6 +709,7 @@ void donate_priority(void)
     struct thread *curr;
     curr = thread_current()->wait_on_lock->holder;
     while (curr->wait_on_lock != NULL){
+        curr->priority = thread_current()->priority;
         curr = curr->wait_on_lock->holder;
         }
     curr->priority = thread_current()->priority;
