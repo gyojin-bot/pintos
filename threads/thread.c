@@ -799,7 +799,6 @@ void refresh_priority(void)
         struct thread *comp = list_entry(list_begin(&curr->donations), struct thread, donation_elem);
         if (comp->priority > curr->priority)
         {
-
             curr->priority = comp->priority;
         }
     }
@@ -813,10 +812,17 @@ void mlfqs_priority(struct thread *t)
 
 void mlfqs_recent_cpu(struct thread *t)
 {
-    if (thread_current() != idle_thread)
-        t->recent_cpu = add_mixed(mult_fp(div_fp(mult_mixed(load_avg, 2), add_mixed(mult_mixed(load_avg, 2), 1)),
-                                          t->recent_cpu),
-                                  t->nice);
+    // if (thread_current() != idle_thread)
+        // t->recent_cpu = add_mixed(mult_fp(div_fp(mult_mixed(load_avg, 2), add_mixed(mult_mixed(load_avg, 2), 1)),t->recent_cpu),t->nice);
+  //recent_cpu =  (2 * load_avg) / (2 * load_avg + 1) * recent_cpu + nice
+  if (t == idle_thread)
+    return;
+  int a = mult_mixed (load_avg, 2);
+  int b = add_mixed (mult_mixed (load_avg, 2), 1);
+  int c = t->recent_cpu;
+  int d = int_to_fp (t->nice);
+  int r = add_fp (mult_fp (div_fp (a, b), c), d);
+  t->recent_cpu = r;
 }
 
 void mlfqs_load_avg(void)
@@ -831,14 +837,19 @@ void mlfqs_load_avg(void)
 void mlfqs_increment(void)
 {
     if (thread_current() != idle_thread)
+    {
         thread_current()->recent_cpu = add_mixed(thread_current()->recent_cpu, 1);
+    }
 }
 
 void mlfqs_recalc(void)
 {
+    
+    mlfqs_recent_cpu(thread_current());
+    mlfqs_priority(thread_current());
     for (struct list_elem *e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e))
     {
-        struct thread *t = list_entry(e, struct thread, elem);
+        struct thread *t = list_entry(e, struct thread, elem);        msg("ready_list");
         mlfqs_recent_cpu(t);
         mlfqs_priority(t);
     }
@@ -848,4 +859,5 @@ void mlfqs_recalc(void)
         mlfqs_recent_cpu(t);
         mlfqs_priority(t);
     }
+
 }
