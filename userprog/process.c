@@ -373,12 +373,11 @@ load(const char *file_name, struct intr_frame *if_)
         goto done;
     process_activate(thread_current());
 
-
-
-    char *save_ptr = NULL;
+    char *save_ptr;
     char *token;
     int count = 0;
-    char *sArr[100] = { NULL, }; 
+    char* sArr[LOADER_ARGS_LEN];
+    // sArr[0] = NULL;
 
     for (sArr[count] = strtok_r(file_name, " ", &save_ptr); sArr[count] != NULL; sArr[count] = strtok_r(NULL, " ", &save_ptr))
         count++;
@@ -464,12 +463,12 @@ load(const char *file_name, struct intr_frame *if_)
 
     /* Start address. */
     if_->rip = ehdr.e_entry;
+    printf("rsp :: %p", if_->rsp);
     
     argument_stack(&sArr, count, &if_->rsp);
-    hex_dump(if_->rsp, (void *)(if_->rsp), KERN_BASE - if_->rsp, 1);
+    hex_dump(if_->rsp, (void *)(if_->rsp), USER_STACK - if_->rsp, 1);
     /* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
-
     success = true;
 
 done:
@@ -705,6 +704,7 @@ void argument_stack(char **parse, int count, void **esp)
 {
     msg("argument_stack");
     int i, j;
+    long* addr_addr;
     char* addr[count];
     for (i = count - 1; i > -1; i--)
     {
@@ -732,8 +732,9 @@ void argument_stack(char **parse, int count, void **esp)
         **(long **)esp = addr[i];
     }
 
-
-
+    addr_addr = *esp;
+    *esp = *esp - 8;
+    **(long **)esp = addr_addr;
     *esp = *esp - 8;
     **(long **)esp = count;
     *esp = *esp - 8;
