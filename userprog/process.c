@@ -466,7 +466,7 @@ load(const char *file_name, struct intr_frame *if_)
     if_->rip = ehdr.e_entry;
     
     argument_stack(&sArr, count, &if_->rsp);
-
+    hex_dump(if_->rsp, (void *)(if_->rsp), KERN_BASE - if_->rsp, 1);
     /* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 
@@ -705,24 +705,37 @@ void argument_stack(char **parse, int count, void **esp)
 {
     msg("argument_stack");
     int i, j;
+    char* addr[count];
     for (i = count - 1; i > -1; i--)
     {
-        msg("%s", parse[i]);
         for (j = strlen(parse[i]); j > -1; j--)
         {
             *esp = *esp - 1;
             **(char **)esp = parse[i][j];
+            
         }
+        addr[i] = *esp;
     }
+    int padding = (((int)addr[0])%8);
+    
+    for(int k=0; k<padding; k++){
+        *esp = *esp - 1;
+        **(char **)esp = 0; 
+    }
+    *esp = *esp - 8;
+    **(long **)esp = 0;
+
+    
     for (i = count - 1; i > -1; i--)
     {
-        *esp = *esp - 1;
-        *(char *)esp = parse[i];
+        *esp = *esp - 8;
+        **(long **)esp = addr[i];
     }
-    *esp = *esp - 1;
-    *(char *)esp = parse;
-    *esp = *esp - 1;
-    *(char *)esp = count;
-    *esp = *esp - 1;
-    *(char *)esp = 0;
+
+
+
+    *esp = *esp - 8;
+    **(long **)esp = count;
+    *esp = *esp - 8;
+    **(char **)esp = 0;
 }
