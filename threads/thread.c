@@ -321,6 +321,7 @@ tid_t thread_tid(void)
    returns to the caller. */
 void thread_exit(void)
 {
+    msg("thread_exit");
     ASSERT(!intr_context());
 
 #ifdef USERPROG

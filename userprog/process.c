@@ -54,12 +54,14 @@ tid_t process_create_initd(const char *file_name)
 
     char *next_ptr;
     file_name = strtok_r(file_name, " ", &next_ptr);
-
+    
+    msg("process create initd");
     tid = thread_create(file_name, PRI_DEFAULT, initd, fn_copy);
 
     if (tid == TID_ERROR)
         palloc_free_page(fn_copy);
 
+    msg("tid %d", tid);
     return tid;
 }
 
@@ -73,7 +75,7 @@ initd(void *f_name)
 #endif
 
     process_init();
-
+    msg("initd");
     if (process_exec(f_name) < 0)
         PANIC("Fail to launch initd\n");
     NOT_REACHED();
@@ -189,9 +191,11 @@ int process_exec(void *f_name)
     process_cleanup();
 
     /* And then load the binary */
-
+    msg("process-exec");
     success = load(file_name, &_if);
-    //hex_dump(_if.es, _if.es, LOADER_PHYS_BASE - _if.es, true);
+
+    //hex_dump(_if->rsp, (void *)(_if->rsp), KERN_BASE - _if->rsp, 1);
+    
     // argument_stack(&file_name, count, &_if.es);
 
     /* If load failed, quit. */
@@ -218,7 +222,7 @@ int process_wait(tid_t child_tid UNUSED)
     /* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-
+    msg("process_wait");
     while (1)
     {
         if (child_tid == TID_ERROR)
@@ -234,7 +238,7 @@ int process_wait(tid_t child_tid UNUSED)
 void process_exit(void)
 {
     struct thread *curr = thread_current();
-
+    msg("process_exit");
     /* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
@@ -247,6 +251,7 @@ void process_exit(void)
 static void
 process_cleanup(void)
 {
+    msg("process_cleanup");
     struct thread *curr = thread_current();
 
 #ifdef VM
@@ -257,8 +262,10 @@ process_cleanup(void)
     /* Destroy the current process's page directory and switch back
 	 * to the kernel-only page directory. */
     pml4 = curr->pml4;
+    
     if (pml4 != NULL)
     {
+
         /* Correct ordering here is crucial.  We must set
 		 * cur->pagedir to NULL before switching page directories,
 		 * so that a timer interrupt can't switch back to the
@@ -269,7 +276,9 @@ process_cleanup(void)
         curr->pml4 = NULL;
         pml4_activate(NULL);
         pml4_destroy(pml4);
+        
     }
+     msg("working2");
 }
 
 /* Sets up the CPU for running user code in the nest thread.
@@ -357,19 +366,23 @@ load(const char *file_name, struct intr_frame *if_)
     off_t file_ofs;
     bool success = false;
     int i;
-
+    
     /* Allocate and activate page directory. */
     t->pml4 = pml4_create();
     if (t->pml4 == NULL)
         goto done;
     process_activate(thread_current());
 
-    char *save_ptr;
-    char *token;
-    int count;
 
-    for (token = strtok_r(file_name, " ", &save_ptr); token != NULL; token = strtok_r(NULL, " ", &save_ptr))
+
+    char *save_ptr = NULL;
+    char *token;
+    int count = 0;
+    char *sArr[100] = { NULL, }; 
+
+    for (sArr[count] = strtok_r(file_name, " ", &save_ptr); sArr[count] != NULL; sArr[count] = strtok_r(NULL, " ", &save_ptr))
         count++;
+
 
     /* Open executable file. */
     file = filesys_open(file_name);
@@ -451,8 +464,8 @@ load(const char *file_name, struct intr_frame *if_)
 
     /* Start address. */
     if_->rip = ehdr.e_entry;
-    msg("before argument_stack   /// %s ", file_name[1]);
-    argument_stack(&file_name, count, &if_->rsp);
+    
+    argument_stack(&sArr, count, &if_->rsp);
 
     /* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
@@ -690,11 +703,11 @@ setup_stack(struct intr_frame *if_)
 
 void argument_stack(char **parse, int count, void **esp)
 {
+    msg("argument_stack");
     int i, j;
     for (i = count - 1; i > -1; i--)
     {
-
-        msg("parse %s", (parse[i]));
+        msg("%s", parse[i]);
         for (j = strlen(parse[i]); j > -1; j--)
         {
             *esp = *esp - 1;

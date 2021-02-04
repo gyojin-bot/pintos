@@ -250,6 +250,7 @@ run_task (char **argv) {
 		run_test (task);
 	} else {
         //여기로 들어감
+        msg("run task");
 		process_wait (process_create_initd (task));
 	}
 #else
