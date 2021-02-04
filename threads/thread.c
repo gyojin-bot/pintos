@@ -18,7 +18,8 @@
 #define LOAD_AVG_DEFAULT 0
 int load_avg;
 
-#ifdef USERPROG
+
+#ifdef USERPROG 
 #include "userprog/process.h"
 #endif
 
@@ -192,6 +193,8 @@ void thread_print_stats(void)
 tid_t thread_create(const char *name, int priority,
                     thread_func *function, void *aux)
 {
+
+ 
     struct thread *t;
     tid_t tid;
 
