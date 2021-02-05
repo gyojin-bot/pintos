@@ -381,6 +381,9 @@ load(const char *file_name, struct intr_frame *if_)
 
     for (sArr[count] = strtok_r(file_name, " ", &save_ptr); sArr[count] != NULL; sArr[count] = strtok_r(NULL, " ", &save_ptr))
         count++;
+    
+    // if_->R.rdi = count;
+    // if_->R.rsi = sArr;
 
 
     /* Open executable file. */
