@@ -194,7 +194,8 @@ int process_exec(void *f_name)
     msg("process-exec");
     success = load(file_name, &_if);
 
-    //hex_dump(_if->rsp, (void *)(_if->rsp), KERN_BASE - _if->rsp, 1);
+    printf("precess excute!!\n");
+    hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
     
     // argument_stack(&file_name, count, &_if.es);
 
@@ -466,12 +467,11 @@ load(const char *file_name, struct intr_frame *if_)
 
     /* Start address. */
     if_->rip = ehdr.e_entry;
-    printf("rsp :: %p", if_->rsp);
     
-    argument_stack(&sArr, count, &if_->rsp);
-    hex_dump(if_->rsp, (void *)(if_->rsp), USER_STACK - if_->rsp, 1);
     /* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+    argument_stack(&sArr, count, &if_->rsp);
+    //hex_dump(if_->rsp, (void *)(if_->rsp), USER_STACK - if_->rsp, 1);
     success = true;
 
 done:
@@ -703,7 +703,7 @@ setup_stack(struct intr_frame *if_)
 }
 #endif /* VM */
 
-void argument_stack(char **parse, int count, void **esp)
+void argument_stack(char **parse, int count, void **rsp)
 {
     msg("argument_stack");
     int i, j;
@@ -713,33 +713,33 @@ void argument_stack(char **parse, int count, void **esp)
     {
         for (j = strlen(parse[i]); j > -1; j--)
         {
-            *esp = *esp - 1;
-            **(char **)esp = parse[i][j];
+            *rsp = *rsp - 1;
+            **(char **)rsp = parse[i][j];
             
         }
-        addr[i] = *esp;
+        addr[i] = *rsp;
     }
     int padding = (((int)addr[0])%8);
     
     for(int k=0; k<padding; k++){
-        *esp = *esp - 1;
-        **(char **)esp = 0; 
+        *rsp = *rsp - 1;
+        **(char **)rsp = 0; 
     }
-    *esp = *esp - 8;
-    **(long **)esp = 0;
+    *rsp = *rsp - 8;
+    **(long **)rsp = 0;
 
     
     for (i = count - 1; i > -1; i--)
     {
-        *esp = *esp - 8;
-        **(long **)esp = addr[i];
+        *rsp = *rsp - 8;
+        **(long **)rsp = addr[i];
     }
 
-    addr_addr = *esp;
-    *esp = *esp - 8;
-    **(long **)esp = addr_addr;
-    *esp = *esp - 8;
-    **(long **)esp = count;
-    *esp = *esp - 8;
-    **(char **)esp = 0;
+    addr_addr = *rsp;
+    *rsp = *rsp - 8;
+    **(long **)rsp = addr_addr;
+    *rsp = *rsp - 8;
+    **(long **)rsp = count;
+    *rsp = *rsp - 8;
+    **(char **)rsp = 0;
 }

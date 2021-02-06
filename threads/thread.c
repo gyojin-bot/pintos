@@ -220,6 +220,14 @@ tid_t thread_create(const char *name, int priority,
     t->tf.cs = SEL_KCSEG;
     t->tf.eflags = FLAG_IF;
 
+    #ifdef USERPROG
+	/* Owned by userprog/process.c. */
+	uint64_t *pml4;                     /* Page map level 4 */
+    t->fd = 2;
+    t->buffer;
+    t->length;
+    #endif
+    
     /* Add to run queue. */
     thread_unblock(t);
     //printf("thread %s creating\n", t->name);

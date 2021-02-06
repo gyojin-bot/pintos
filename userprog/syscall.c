@@ -11,6 +11,9 @@
 #include "threads/init.h"
 #include "filesys/filesys.h"
 #include "filesys/file.h"
+// #include "threads/mmu.h"
+// #include "lib/user/syscall.h"
+// #include "lib/syscall-nr.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -47,61 +50,78 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
 	printf ("system call!\n");
 
-    // uint64_t syscall_num = f->rip;
+    // uint64_t* syscall_num = f->R.rsp;
     // void* esp = f->rsp;
-    msg("rip :: %p\n", f->rip);
-    msg("rsp :: %p\n", f->rsp);
-    hex_dump(f->rsp, (void *)(f->rsp), USER_STACK - f->rsp, 1);
+    printf("rax : %d\n", f->R.rax);
+    printf("rdi : %d\n", f->R.rdi);
+    printf("rsi : %p\n", f->R.rsi);
+    printf("rdx : %d\n", f->R.rdx);
+    printf("r10 : %d\n", f->R.r10);
+    printf("r8 : %d\n", f->R.r8);
+    printf("r9 : %d\n", f->R.r9);
+    //hex_dump(f->rsp, (void *)(f->rsp), USER_STACK - f->rsp, 1);
     // uint64_t argv = f->R.rsi;
     // uint64_t count = f->R.rdi;
-    // check_address(&argv);
+    check_address(f->R.rax);
+    char *arg[6];
 
-    // int syscall_num = f->R.rax;
-    switch (1)
+    int syscall_num = f->R.rax;
+    printf("syscll num :: %d\n\n", syscall_num);
+    switch (syscall_num)
     {
-    case SYS_HALT:                   /* Halt the operating system. */
-        halt();
-        break;
+    // case SYS_HALT:                   /* Halt the operating system. */
+    //     halt();
+    //     break;
     
-    case SYS_EXIT:                   /* Terminate this process. */
-        break;
-    
-    case SYS_FORK:                   /* Clone current process. */
-        break;
+    // case SYS_EXIT:                   /* Terminate this process. */
+    //     get_argument(f->R.rax, arg, 1);
+    //     exit(arg[0]);
+    //     break;
 
-    case SYS_EXEC:                   /* Switch current process. */
-        break;
-    
-    case SYS_WAIT:                   /* Wait for a child process to die. */
-        break;
+    // case SYS_FORK:                   /* Clone current process. */
+    //     get_argument(f->R.rax, arg, 1);
+    //     // fork(arg[0]);
+    //     break;
 
-    case SYS_CREATE:                 /* Create a file. */
-        break;
-
-    case SYS_REMOVE:                 /* Delete a file. */
-        break;
+    // case SYS_EXEC:                   /* Switch current process. */
+    //     get_argument(f->R.rax, arg, 1);
+    //     f->R.rax = exec(*(const char*)arg[0]);
+    //     break;
     
-    case SYS_OPEN:                   /* Open a file. */
-        break;
+    // case SYS_WAIT:                   /* Wait for a child process to die. */
+    //     get_argument(f->R.rax, arg, 1);
+    //     // f->R.rax = wait(*(pid_t*)arg[0]);
+    //     break;
 
-    case SYS_FILESIZE:               /* Obtain a file's size. */
-        break;
+    // case SYS_CREATE:                 /* Create a file. */
+    //     break;
+
+    // case SYS_REMOVE:                 /* Delete a file. */
+    //     break;
     
-    case SYS_READ:                   /* Read from a file. */
-        break;
+    // case SYS_OPEN:                   /* Open a file. */
+    //     break;
+
+    // case SYS_FILESIZE:               /* Obtain a file's size. */
+    //     break;
+    
+    // case SYS_READ:                   /* Read from a file. */
+    //     break;
     
     case SYS_WRITE:                  /* Write to a file. */
-        write();
+        get_argument(f->R.rax, arg, 3);
+        f->R.rax = write(*(int*)arg[0], arg[1], *(unsigned *) arg[2]);
+        write(*(int64_t*)f->R.rdi, f->R.rsi, *(int64_t*)f->R.rdx);
         break;
 
-    case SYS_SEEK:                   /* Change position in a file. */
-        break;
+    // case SYS_SEEK:                   /* Change position in a file. */
+    //     break;
     
-    case SYS_TELL:                   /* Report current position in a file. */
-        break;
+    // case SYS_TELL:                   /* Report current position in a file. */
+    //     break;
 
-    case SYS_CLOSE:                  /* Close a file. */
-        break;
+    // case SYS_CLOSE:                  /* Close a file. */
+    //     break;
     
     default:
         thread_exit ();
@@ -115,60 +135,80 @@ void check_address(void *addr)
 /* 잘못된 접근일 경우 프로세스 종료 */
     if(!is_user_vaddr(addr))
     {
-        exit(-1);
+        process_exit(-1);
     }
 }
-// void get_argument(void *esp)//, int *arg , int count)
+void get_argument(void *rsp, int *arg , int count)
+{
+/* 유저 스택에 저장된 인자값들을 커널로 저장 */
+/* 인자가 저장된 위치가 유저영역인지 확인 */
+    
+    int i = 0;
+    while (i < count){
+        check_address(&rsp + 8);
+        rsp = rsp + 8;
+        arg[i] = rsp;
+        ++i;
+    }
+}
+
+// void halt (void)
 // {
-// /* 유저 스택에 저장된 인자값들을 커널로 저장 */
-// /* 인자가 저장된 위치가 유저영역인지 확인 */
-//     check_address(&esp);
-//     while (esp < USER_STACK){
-//         long a = *(long*)esp;
-//         printf("%p\n", esp);
-//         printf("%d\n", *esp);
-//         esp = esp + 8;
-//     }
+//     /* shutdown_power_off()를사용하여pintos 종료*/
+//     power_off();
 // }
 
-void halt (void)
-{
-    /* shutdown_power_off()를사용하여pintos 종료*/
-    power_off();
-}
+// void exit (int status)
+// {
+//     /* 실행중인스레드구조체를가져옴*/
+//     // struct thread *curr = thread_current();
+//     /* 프로세스종료메시지출력,
+//     출력양식: “프로세스이름: exit(종료상태)” */
+//     thread_exit();
+//     // printf("프로세스이름: %s exit(%d)", curr->name, status);
+//     /* 스레드종료*/
+// }
 
-void exit (int status)
-{
-    /* 실행중인스레드구조체를가져옴*/
-    struct thread *curr = thread_current();
-    /* 프로세스종료메시지출력,
-    출력양식: “프로세스이름: exit(종료상태)” */
-    msg("프로세스이름: %s exit(%d)", curr->name, status);
-    /* 스레드종료*/
-    thread_exit();
-}
+// // pid_t
+// // fork (const char *thread_name){
+// //     pml4_for_each (uint64_t *pml4, pte_for_each_func *func, void *aux);
+// // 	return (pid_t) syscall1 (SYS_FORK, thread_name);
+// // }
 
-bool create(const char *file , unsigned initial_size)
-{
-    /* 파일이름과크기에해당하는파일생성*/
-    // file = filesys_create(file, initial_size);
-    /* 파일생성성공시true 반환, 실패시false 반환*/
-    if (file == NULL)
-        return false;
-    return true;
-}
+// int exec (const char *file)
+// {
+//     return process_exec(file);
+// }
 
-bool remove(const char *file)
-{
-    /* 파일이름에해당하는파일을제거*/
-    palloc_free_page(file);
-    /* 파일제거성공시true 반환, 실패시false 반환*/
-    if (file == NULL)
-        return true;
-    return false;
-}
+// int wait (pid_t pid)
+// {
+//     return process_wait(pid);
+// }
+
+// bool create(const char *file , unsigned initial_size)
+// {
+//     /* 파일이름과크기에해당하는파일생성*/
+//     file = filesys_create(file, initial_size);
+//     /* 파일생성성공시true 반환, 실패시false 반환*/
+//     if (file == NULL)
+//         return false;
+//     return true;
+// }
+
+// bool remove(const char *file)
+// {
+//     /* 파일이름에해당하는파일을제거*/
+//     palloc_free_page(file);
+//     /* 파일제거성공시true 반환, 실패시false 반환*/
+//     if (file == NULL)
+//         return true;
+//     return false;
+// }
 
 int write(int fd, const void *buffer, unsigned size)
 {
-    file_write(fd, &buffer, size);
+    // if (filesys_create(fd, size)){
+
+    // }
+    return file_write(fd, &buffer, size);
 }
