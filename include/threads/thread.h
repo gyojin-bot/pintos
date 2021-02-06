@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -108,7 +109,7 @@ struct thread {
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
-    struct file* fd_table[LOADER_ARGS_LEN];
+    struct file* fd_table[128];
     // 부모 프로세스, 자식 프로세스 선언
     int parent_fd; //Parent descriptor
     struct list child_list;

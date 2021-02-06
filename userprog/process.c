@@ -773,7 +773,7 @@ struct thread *get_child_process(int pid){
 
 void remove_child_process(struct thread *cp){
 
-    list_remove(cp->child_elem);
+    list_remove(&cp->child_elem);
     //프로세스 디스크립터 메모리 해제 : 고려 필요
     palloc_free_page(cp);
 }

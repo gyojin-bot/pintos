@@ -187,7 +187,7 @@ int exec (const char *file)
     return pid;
 }
 
-int wait (pid_t pid)
+int wait (tid_t pid)
 {
     return process_wait(pid);
 }
