@@ -105,13 +105,22 @@ struct thread {
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
-    // 부모 프로세스, 자식 프로세스 선언
-    
-
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
-
+    struct file* fd_table[LOADER_ARGS_LEN];
+    // 부모 프로세스, 자식 프로세스 선언
+    int parent_fd; //Parent descriptor
+    struct list child_list;
+    struct list_elem child_elem;
+    /* Exit semaphore, Load Semaphore*/
+    struct semaphore exit;
+    struct semaphore load;
+    /* 프로세스의 유저 프로그램 메모리 적재 여부*/
+    bool load_success;
+    bool process_end;
+    /*Exit 호출 시 종료 Status*/
+    int exit_status;
 #endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */

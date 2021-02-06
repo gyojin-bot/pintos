@@ -36,7 +36,7 @@ syscall_init (void) {
 	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48  |
 			((uint64_t)SEL_KCSEG) << 32);
 	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
-
+    lock_init(&filesys_lock);
 	/* The interrupt service rountine should not serve any interrupts
 	 * until the syscall_entry swaps the userland stack to the kernel
 	 * mode stack. Therefore, we masked the FLAG_FL. */
@@ -83,10 +83,10 @@ syscall_handler (struct intr_frame *f UNUSED) {
     //     // fork(arg[0]);
     //     break;
 
-    // case SYS_EXEC:                   /* Switch current process. */
-    //     get_argument(f->R.rax, arg, 1);
-    //     f->R.rax = exec(*(const char*)arg[0]);
-    //     break;
+    case SYS_EXEC:                   /* Switch current process. */
+        get_argument(&f->R.rax, arg, 1);
+        f->R.rax = exec(*(const char*)arg[0]);
+        break;
     
     // case SYS_WAIT:                   /* Wait for a child process to die. */
     //     get_argument(f->R.rax, arg, 1);
@@ -145,7 +145,7 @@ void get_argument(void *rsp, int *arg , int count)
     
     int i = 0;
     while (i < count){
-        check_address(&rsp + 8);
+        check_address(rsp + 8);
         rsp = rsp + 8;
         arg[i] = rsp;
         ++i;
@@ -158,16 +158,16 @@ void get_argument(void *rsp, int *arg , int count)
 //     power_off();
 // }
 
-// void exit (int status)
-// {
-//     /* 실행중인스레드구조체를가져옴*/
-//     // struct thread *curr = thread_current();
-//     /* 프로세스종료메시지출력,
-//     출력양식: “프로세스이름: exit(종료상태)” */
-//     thread_exit();
-//     // printf("프로세스이름: %s exit(%d)", curr->name, status);
-//     /* 스레드종료*/
-// }
+void exit (int status)
+{
+    /* 실행중인스레드구조체를가져옴*/
+    struct thread *curr = thread_current();
+    /* 프로세스종료메시지출력,
+    출력양식: “프로세스이름: exit(종료상태)” */
+    printf("프로세스이름: %s exit(%d)", curr->name, status);
+    thread_exit();
+    /* 스레드종료*/
+}
 
 // // pid_t
 // // fork (const char *thread_name){
@@ -175,15 +175,22 @@ void get_argument(void *rsp, int *arg , int count)
 // // 	return (pid_t) syscall1 (SYS_FORK, thread_name);
 // // }
 
-// int exec (const char *file)
-// {
-//     return process_exec(file);
-// }
+int exec (const char *file)
+{
+    int pid = process_create_initd(file);
+    struct thread *child = get_child_process(pid);
+    
+    sema_down(&child->load);
+    if(!child->load_success)
+        return -1;
 
-// int wait (pid_t pid)
-// {
-//     return process_wait(pid);
-// }
+    return pid;
+}
+
+int wait (pid_t pid)
+{
+    return process_wait(pid);
+}
 
 // bool create(const char *file , unsigned initial_size)
 // {
@@ -207,8 +214,75 @@ void get_argument(void *rsp, int *arg , int count)
 
 int write(int fd, const void *buffer, unsigned size)
 {
-    // if (filesys_create(fd, size)){
+    lock_acquire(&filesys_lock);
+    
+    struct file *f = process_get_file(fd);
+    int i = 0;
+    if(f==NULL){
+        lock_release(&filesys_lock);
+        return 0;
+    }
+    if(fd == 1){
+        putbuf(buffer, size);
+        lock_release(&filesys_lock);
+        return size;
+    }
+    else{
+        file_write(f, buffer, size);
+        lock_release(&filesys_lock);
+        return file_read(f, buffer, size);
+    }
+}
 
-    // }
-    return file_write(fd, &buffer, size);
+int open(const char *file){
+    struct file *f = filesys_open(file);
+    if (f == NULL)
+        return -1;
+    return process_add_file(f);
+}
+
+int filesize(int fd){
+    struct file *f = process_get_file(fd);
+    int size;
+    if (f == NULL)
+        return -1;
+    size = file_length(f);
+    return size;
+}
+
+int read(int fd, void *buffer, unsigned size){
+    lock_acquire(&filesys_lock);
+    struct file *f = process_get_file(fd);
+    int i = 0;
+    if(f==NULL){
+        lock_release(&filesys_lock);
+        return -1;
+    }
+    if(fd == 0){
+        while(i<size){
+            *(char*)buffer = input_getc();
+            buffer = buffer + 1;
+            i++;
+        }
+        lock_release(&filesys_lock);
+        return size;
+    }
+    else{
+        lock_release(&filesys_lock);
+        return file_read(f, buffer, size);
+    }
+}
+
+void seek(int fd, unsigned position){
+    struct file *f = process_get_file(fd);
+    file_seek(f, position);    
+}
+
+unsigned tell(int fd){
+    struct file *f = process_get_file(fd);
+    return file_tell(f);
+}
+
+void close(int fd){
+    process_close_file(fd);
 }

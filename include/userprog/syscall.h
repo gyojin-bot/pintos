@@ -23,5 +23,6 @@ unsigned tell (int fd);
 void close (int fd);
 
 int dup2(int oldfd, int newfd);
+struct lock filesys_lock;
 
 #endif /* userprog/syscall.h */

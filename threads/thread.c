@@ -194,7 +194,6 @@ tid_t thread_create(const char *name, int priority,
                     thread_func *function, void *aux)
 {
 
- 
     struct thread *t;
     tid_t tid;
 
@@ -221,11 +220,17 @@ tid_t thread_create(const char *name, int priority,
     t->tf.eflags = FLAG_IF;
 
     #ifdef USERPROG
+    struct thread *parent = aux;
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
-    t->fd = 2;
-    t->buffer;
-    t->length;
+    t->parent_fd = 2;
+    /* 세마포어 초기화*/
+    sema_init(&t->exit, 0);
+    sema_init(&t->load, 0);
+    /* 자식 리스트 초기화*/
+    list_init(&t->child_list);
+    /* 자식 리스트에 추가*/
+    list_push_back(&parent->child_list, &t->child_elem);
     #endif
     
     /* Add to run queue. */
@@ -339,6 +344,9 @@ void thread_exit(void)
     /* Just set our status to dying and schedule another process.
        We will be destroyed during the call to schedule_tail(). */
     intr_disable();
+    
+    sema_up(&thread_current()->exit);
+    //thread_current()->status = THREAD_DYING;
     do_schedule(THREAD_DYING);
     NOT_REACHED();
 }
@@ -509,8 +517,7 @@ init_thread(struct thread *t, const char *name, int priority)
     t->init_priority = priority;
     // lock_init(t->wait_on_lock);
     list_init(&t->donations);
-    // struct list_elem donation_elem;
-
+    
     t->nice = NICE_DEFAULT;
     t->recent_cpu = RECENT_CPU_DEFAULT;
 }
@@ -706,12 +713,13 @@ schedule(void)
            currently used bye the stack.
            The real destruction logic will be called at the beginning of the
            schedule(). */
-        if (curr && curr->status == THREAD_DYING && curr != initial_thread)
-        {
-            ASSERT(curr != next);
-            list_push_back(&destruction_req, &curr->elem);
-        }
-
+        #ifndef USERPROG
+            if (curr && curr->status == THREAD_DYING && curr != initial_thread)
+            {
+                ASSERT(curr != next);
+                list_push_back(&destruction_req, &curr->elem);
+            }
+        #endif
         /* Before switching the thread, we first save the information
          * of current running. */
         thread_launch(next);

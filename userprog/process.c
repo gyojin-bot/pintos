@@ -177,7 +177,7 @@ int process_exec(void *f_name)
 {
     char *file_name = f_name;
     bool success;
-
+    struct thread *t = thread_current();
     /* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -193,6 +193,8 @@ int process_exec(void *f_name)
     /* And then load the binary */
     msg("process-exec");
     success = load(file_name, &_if);
+    t->load_success = success;
+    sema_up(&thread_current()->load);
 
     printf("precess excute!!\n");
     hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
@@ -202,11 +204,12 @@ int process_exec(void *f_name)
     /* If load failed, quit. */
     palloc_free_page(file_name);
     if (!success)
-        return -1;
+        thread_exit();
 
     /* Start switched process. */
     do_iret(&_if);
     NOT_REACHED();
+
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
@@ -224,15 +227,17 @@ int process_wait(tid_t child_tid UNUSED)
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
     msg("process_wait");
-    while (1)
-    {
-        if (child_tid == TID_ERROR)
-        {
-            break;
-        }
+    struct thread *child_thread = get_child_process(child_tid);
+    
+    if (child_thread== NULL){
+        return -1;
     }
-
-    return -1;
+    
+    /* 부모 프로세스 진행 */
+    sema_down(&child_thread->exit);
+    int exit_status = child_thread->status;
+    remove_child_process(child_thread);
+    return exit_status;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -244,7 +249,10 @@ void process_exit(void)
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-
+    while(curr->parent_fd >= 2){
+        process_close_file(curr->parent_fd);
+        curr->parent_fd--;
+    }
     process_cleanup();
 }
 
@@ -742,4 +750,53 @@ void argument_stack(char **parse, int count, void **rsp)
     **(long **)rsp = count;
     *rsp = *rsp - 8;
     **(char **)rsp = 0;
+}
+
+struct thread *get_child_process(int pid){
+    struct thread * parent = thread_current();
+
+    for (struct list_elem *e = list_begin(&parent->child_list); e != list_end(&parent->child_list);)
+    {
+        struct thread *t = list_entry(e, struct thread, child_elem);
+        if (t->tid == pid)
+        {
+            return t;
+        }
+        else
+        {
+            e = list_next(e);
+        }
+    }
+
+    return NULL;
+}
+
+void remove_child_process(struct thread *cp){
+
+    list_remove(cp->child_elem);
+    //프로세스 디스크립터 메모리 해제 : 고려 필요
+    palloc_free_page(cp);
+}
+
+int process_add_file(struct file *f){
+    struct thread *curr = thread_current();
+    curr->fd_table[curr->parent_fd] = f;
+    curr->parent_fd += 1;
+    return curr->parent_fd-1;
+}
+
+struct file *process_get_file(int fd){
+    struct thread *curr = thread_current();
+    int i = 0;
+    while(i<curr->parent_fd){
+        if(fd == i)
+            return curr->fd_table[i];
+        i++;
+    }
+    return NULL;
+}
+
+void process_close_file(int fd){
+    file_close(thread_current()->fd_table[fd]);
+    thread_current()->fd_table[fd] = NULL;
 }
