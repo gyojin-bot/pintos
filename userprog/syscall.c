@@ -87,12 +87,12 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
     case SYS_EXEC:                   /* Switch current process. */
         //get_argument(f->R.rax, arg, 1);
-        //f->R.rax = exec(f->R.rdi);
+        f->R.rax = exec(f->R.rdi);
         break;
     
     case SYS_WAIT:                   /* Wait for a child process to die. */
         //get_argument(f->R.rax, arg, 1);
-        //f->R.rax = wait(f->R.rdi);
+        f->R.rax = wait(f->R.rdi);
         break;
 
     case SYS_CREATE:                 /* Create a file. */
@@ -241,7 +241,7 @@ int write(int fd, const void *buffer, unsigned size)
     if(fd >=2){
         file_write(f, buffer, size);
         lock_release(&filesys_lock);
-        return file_read(f, buffer, size);
+        return size;
     }
 }
 
@@ -255,18 +255,21 @@ int open(const char *file){
 }
 
 int filesize(int fd){
-    struct file *f = process_get_file(fd);
-    int size;
+    struct file *f = thread_current()->fd_table[fd];
+    //printf("file length :: %d\n\n", file_length(thread_current()->fd_table[fd]));
     if (f == NULL)
         return -1;
+    int size;
+    // printf("here %d\n\n", f->pos);
     size = file_length(f);
     return size;
 }
 
 int read(int fd, void *buffer, unsigned size){
     lock_acquire(&filesys_lock);
-    struct file *f = process_get_file(fd);
+    struct file *f = thread_current()->fd_table[fd];
     int i = 0;
+    
     if(fd == 0){
         while(i<size){
             *(char*)buffer = input_getc();
@@ -278,12 +281,10 @@ int read(int fd, void *buffer, unsigned size){
     }
     if(f==NULL){
         lock_release(&filesys_lock);
-        return -1;
+        exit(-1);
     }
-    else{
-        lock_release(&filesys_lock);
-        return file_read(f, buffer, size);
-    }
+    lock_release(&filesys_lock);
+    return file_read(f, buffer, size);
 }
 
 void seek(int fd, unsigned position){

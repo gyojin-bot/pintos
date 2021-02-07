@@ -785,14 +785,16 @@ int process_add_file(struct file *f){
 }
 
 struct file *process_get_file(int fd){
-    struct thread *curr = thread_current();
-    int i = 0;
-    while(i < curr->parent_fd){
-        if(fd == i)
-            return curr->fd_table[i];
-        i++;
-    }
-    return NULL;
+    // struct thread *curr = thread_current();
+
+    return thread_current()->fd_table[fd];
+    // while(i < curr->parent_fd){
+    //     if(fd == i){
+    //         return curr->fd_table[i];
+    //     }
+    //     i++;
+    // }
+    // return NULL;
 }
 
 void process_close_file(int fd){
