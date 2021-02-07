@@ -245,12 +245,12 @@ run_task (char **argv) {
 	printf ("Executing '%s':\n", task);
 #ifdef USERPROG
     
-	if (thread_tests){
+	if (thread_tests){  
 
 		run_test (task);
 	} else {
         //여기로 들어감
-        msg("run task");
+        // printf("run task\n\n");
 		process_wait (process_create_initd (task));
 	}
 #else

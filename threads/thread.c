@@ -207,6 +207,7 @@ tid_t thread_create(const char *name, int priority,
     /* Initialize thread. */
     init_thread(t, name, priority);
     tid = t->tid = allocate_tid();
+    // printf("tid ===== %d\n\n", t->tid);
 
     /* Call the kernel_thread if it scheduled.
      * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -220,7 +221,7 @@ tid_t thread_create(const char *name, int priority,
     t->tf.eflags = FLAG_IF;
 
     #ifdef USERPROG
-    struct thread *parent = aux;
+    struct thread *parent = thread_current();
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
     t->parent_fd = 2;
@@ -228,7 +229,7 @@ tid_t thread_create(const char *name, int priority,
     sema_init(&t->exit, 0);
     sema_init(&t->load, 0);
     /* 자식 리스트 초기화*/
-    list_init(&t->child_list);
+    list_init(&parent->child_list);
     /* 자식 리스트에 추가*/
     list_push_back(&parent->child_list, &t->child_elem);
     #endif
@@ -318,6 +319,7 @@ thread_current(void)
        have overflowed its stack.  Each thread has less than 4 kB
        of stack, so a few big automatic arrays or moderate
        recursion can cause stack overflow. */
+    // printf("curr thread !! :: %s\n\n", t->name);
     ASSERT(is_thread(t));
     ASSERT(t->status == THREAD_RUNNING);
 
@@ -334,18 +336,19 @@ tid_t thread_tid(void)
    returns to the caller. */
 void thread_exit(void)
 {
-    msg("thread_exit");
+    // msg("thread_exit");
     ASSERT(!intr_context());
 
 #ifdef USERPROG
+    // printf("sema upppppp\n\n");
     process_exit();
+    sema_up(&thread_current()->exit);
 #endif
 
     /* Just set our status to dying and schedule another process.
        We will be destroyed during the call to schedule_tail(). */
     intr_disable();
     
-    sema_up(&thread_current()->exit);
     //thread_current()->status = THREAD_DYING;
     do_schedule(THREAD_DYING);
     NOT_REACHED();

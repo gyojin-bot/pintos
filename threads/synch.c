@@ -120,6 +120,7 @@ sema_up (struct semaphore *sema) {
     // if (next->priority > thread_get_priority())
     //     thread_yield();
     test_max_priority();
+    //printf("sema value :: %d\n\n", sema->value);
 	intr_set_level (old_level);
 }
 

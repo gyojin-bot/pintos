@@ -143,6 +143,7 @@ void
 putbuf (const char *buffer, size_t n) {
 	acquire_console ();
 	while (n-- > 0)
+        // printf("buffer :: %s", *buffer);
 		putchar_have_lock (*buffer++);
 	release_console ();
 }

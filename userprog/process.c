@@ -55,13 +55,13 @@ tid_t process_create_initd(const char *file_name)
     char *next_ptr;
     file_name = strtok_r(file_name, " ", &next_ptr);
     
-    msg("process create initd");
+    // printf("process create initd\n\n");
     tid = thread_create(file_name, PRI_DEFAULT, initd, fn_copy);
 
     if (tid == TID_ERROR)
         palloc_free_page(fn_copy);
 
-    msg("tid %d", tid);
+    // printf("tid %d\n\n", tid);
     return tid;
 }
 
@@ -75,7 +75,7 @@ initd(void *f_name)
 #endif
 
     process_init();
-    msg("initd");
+    // printf("initd\n\n");
     if (process_exec(f_name) < 0)
         PANIC("Fail to launch initd\n");
     NOT_REACHED();
@@ -191,13 +191,13 @@ int process_exec(void *f_name)
     process_cleanup();
 
     /* And then load the binary */
-    msg("process-exec");
+    // printf("=============process-exec===========\n\n");
     success = load(file_name, &_if);
+    sema_down(&t->load);
     t->load_success = success;
-    sema_up(&thread_current()->load);
 
-    printf("precess excute!!\n");
-    hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
+    // printf("after load========!!\n");
+    //hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
     
     // argument_stack(&file_name, count, &_if.es);
 
@@ -226,10 +226,10 @@ int process_wait(tid_t child_tid UNUSED)
     /* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-    msg("process_wait");
+
     struct thread *child_thread = get_child_process(child_tid);
     
-    if (child_thread== NULL){
+    if (child_thread == NULL){
         return -1;
     }
     
@@ -244,7 +244,7 @@ int process_wait(tid_t child_tid UNUSED)
 void process_exit(void)
 {
     struct thread *curr = thread_current();
-    msg("process_exit");
+    // printf("process_exit\n\n");
     /* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
@@ -253,6 +253,7 @@ void process_exit(void)
         process_close_file(curr->parent_fd);
         curr->parent_fd--;
     }
+    curr->parent_fd++;
     process_cleanup();
 }
 
@@ -260,7 +261,7 @@ void process_exit(void)
 static void
 process_cleanup(void)
 {
-    msg("process_cleanup");
+    // printf("process_cleanup\n\n");
     struct thread *curr = thread_current();
 
 #ifdef VM
@@ -287,7 +288,6 @@ process_cleanup(void)
         pml4_destroy(pml4);
         
     }
-     msg("working2");
 }
 
 /* Sets up the CPU for running user code in the nest thread.
@@ -380,7 +380,8 @@ load(const char *file_name, struct intr_frame *if_)
     t->pml4 = pml4_create();
     if (t->pml4 == NULL)
         goto done;
-    process_activate(thread_current());
+    process_activate(t);
+    // printf("================in load=================\n\n");
 
     char *save_ptr;
     char *token;
@@ -478,13 +479,16 @@ load(const char *file_name, struct intr_frame *if_)
     
     /* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
-    argument_stack(&sArr, count, &if_->rsp);
+    if_->R.rdi = count;
+    if_->R.rsi = argument_stack(&sArr, count, &if_->rsp);
+    // printf("들어옵니까???\n\n");
     //hex_dump(if_->rsp, (void *)(if_->rsp), USER_STACK - if_->rsp, 1);
     success = true;
 
 done:
     /* We arrive here whether the load is successful or not. */
     file_close(file);
+    sema_up(&t->load);
     return success;
 }
 
@@ -711,11 +715,10 @@ setup_stack(struct intr_frame *if_)
 }
 #endif /* VM */
 
-void argument_stack(char **parse, int count, void **rsp)
+void* argument_stack(char **parse, int count, void **rsp)
 {
-    msg("argument_stack");
+    //msg("argument_stack");
     int i, j;
-    long* addr_addr;
     char* addr[count];
     for (i = count - 1; i > -1; i--)
     {
@@ -743,28 +746,24 @@ void argument_stack(char **parse, int count, void **rsp)
         **(long **)rsp = addr[i];
     }
 
-    addr_addr = *rsp;
-    *rsp = *rsp - 8;
-    **(long **)rsp = addr_addr;
-    *rsp = *rsp - 8;
-    **(long **)rsp = count;
+    // *rsp = *rsp - 8;
+    // **(long **)rsp = *rsp + 8;
+    // *rsp = *rsp - 8;
+    // **(long **)rsp = count;
     *rsp = *rsp - 8;
     **(char **)rsp = 0;
+    return *rsp + 8;
 }
 
 struct thread *get_child_process(int pid){
     struct thread * parent = thread_current();
 
-    for (struct list_elem *e = list_begin(&parent->child_list); e != list_end(&parent->child_list);)
+    for (struct list_elem *e = list_begin(&parent->child_list); e != list_end(&parent->child_list); e = list_next(e))
     {
         struct thread *t = list_entry(e, struct thread, child_elem);
         if (t->tid == pid)
         {
             return t;
-        }
-        else
-        {
-            e = list_next(e);
         }
     }
 
@@ -788,7 +787,7 @@ int process_add_file(struct file *f){
 struct file *process_get_file(int fd){
     struct thread *curr = thread_current();
     int i = 0;
-    while(i<curr->parent_fd){
+    while(i < curr->parent_fd){
         if(fd == i)
             return curr->fd_table[i];
         i++;
