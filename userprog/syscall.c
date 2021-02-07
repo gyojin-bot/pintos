@@ -64,9 +64,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
     //hex_dump(f->rsp, f->rsp, USER_STACK - f->rsp, 1);
     // uint64_t argv = f->R.rsi;
     // uint64_t count = f->R.rdi;
-    check_address(f->R.rax);
-    // char *arg[6];
-
+    // printf("rsp :: %p\n\n", f->rsp);
+    // printf("rax :: %p\n\n", f->R.rdi);
+    
     // int syscall_num = f->R.rax;
     // printf("syscll num :: %d\n\n", syscall_num);
     switch (f->R.rax)
@@ -96,18 +96,20 @@ syscall_handler (struct intr_frame *f UNUSED) {
         break;
 
     case SYS_CREATE:                 /* Create a file. */
-        // get_argument(f->R.rax, arg, )
+        check_address(f->R.rdi);
+        f->R.rax = create(f->R.rdi, f->R.rsi);
         break;
 
     case SYS_REMOVE:                 /* Delete a file. */
+        f->R.rax = remove(f->R.rdi);
         break;
     
     case SYS_OPEN:                   /* Open a file. */
-        //f->R.rax = open(f->R.rdi);
+        f->R.rax = open(f->R.rdi);
         break;
 
     case SYS_FILESIZE:               /* Obtain a file's size. */
-        //f->R.rax = filesize(f->R.rdi);
+        f->R.rax = filesize(f->R.rdi);
         break;
     
     case SYS_READ:                   /* Read from a file. */
@@ -115,21 +117,20 @@ syscall_handler (struct intr_frame *f UNUSED) {
         break;
     
     case SYS_WRITE:                  /* Write to a file. */
-        // get_argument(f->R.rax, arg, 3);
         f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
         //f->R.rax = write(*(int*)f->R.rdi, f->R.rsi, *(int64_t*)f->R.rdx);
         break;
 
     case SYS_SEEK:                   /* Change position in a file. */
-        //seek(f->R.rdi, f->R.rsi);
+        seek(f->R.rdi, f->R.rsi);
         break;
     
     case SYS_TELL:                   /* Report current position in a file. */
-        //f->R.rax = tell(f->R.rdi);
+        f->R.rax = tell(f->R.rdi);
         break;
 
     case SYS_CLOSE:                  /* Close a file. */
-        //close(f->R.rdi);
+        close(f->R.rdi);
         break;
     
     default:
@@ -143,23 +144,21 @@ void check_address(void *addr)
 /* 포인터가 가리키는 주소가 유저영역의 주소인지 확인 */
 /* 잘못된 접근일 경우 프로세스 종료 */
     if(!is_user_vaddr(addr))
-    {
         exit(-1);
-    }
 }
-void get_argument(void *rax, int *arg , int count)
-{
-/* 유저 스택에 저장된 인자값들을 커널로 저장 */
-/* 인자가 저장된 위치가 유저영역인지 확인 */
+// void get_argument(void *rax, int *arg , int count)
+// {
+// /* 유저 스택에 저장된 인자값들을 커널로 저장 */
+// /* 인자가 저장된 위치가 유저영역인지 확인 */
     
-    int i = 0;
-    while (i < count){
-        check_address(rax + 8);
-        rax = rax + 8;
-        arg[i] = rax;
-        ++i;
-    }
-}
+//     int i = 0;
+//     while (i < count){
+//         check_address(rax + 8);
+//         rax = rax + 8;
+//         arg[i] = rax;
+//         ++i;
+//     }
+// }
 
 void halt (void)
 {
@@ -200,25 +199,29 @@ int wait (tid_t pid)
     return process_wait(pid);
 }
 
-// bool create(const char *file , unsigned initial_size)
-// {
-//     /* 파일이름과크기에해당하는파일생성*/
-//     file = filesys_create(file, initial_size);
-//     /* 파일생성성공시true 반환, 실패시false 반환*/
-//     if (file == NULL)
-//         return false;
-//     return true;
-// }
+bool create(const char *file , unsigned initial_size)
+{
+    /* 파일이름과크기에해당하는파일생성*/
+    if (file == NULL)
+        exit(-1);
+    // bool success = filesys_create(file, initial_size);
+    // /* 파일생성성공시true 반환, 실패시false 반환*/
+    // if (!success)
+    //     return false;
+    return filesys_create(file, initial_size);
+}
 
-// bool remove(const char *file)
-// {
-//     /* 파일이름에해당하는파일을제거*/
-//     palloc_free_page(file);
-//     /* 파일제거성공시true 반환, 실패시false 반환*/
-//     if (file == NULL)
-//         return true;
-//     return false;
-// }
+bool remove(const char *file)
+{
+    if (file == NULL)
+        exit(-1);
+    /* 파일이름에해당하는파일을제거*/
+    palloc_free_page(file);
+    /* 파일제거성공시true 반환, 실패시false 반환*/
+    if (file == NULL)
+        return true;
+    return false;
+}
 
 int write(int fd, const void *buffer, unsigned size)
 {
@@ -243,6 +246,8 @@ int write(int fd, const void *buffer, unsigned size)
 }
 
 int open(const char *file){
+    if (file == NULL)
+        exit(-1);
     struct file *f = filesys_open(file);
     if (f == NULL)
         return -1;

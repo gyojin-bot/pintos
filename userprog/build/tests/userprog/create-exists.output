@@ -16,15 +16,17 @@ Executing 'create-exists':
 (create-exists) create quux.dat
 (create-exists) create warble.dat
 (create-exists) try to re-create quux.dat
-(create-exists) try to re-create quux.dat: FAILED
-create-exists: exit(1)
+(create-exists) create baffle.dat
+(create-exists) try to re-create quux.dat
+(create-exists) end
+create-exists: exit(0)
 Execution of 'create-exists' complete.
-Timer: 60 ticks
-Thread: 30 idle ticks, 28 kernel ticks, 2 user ticks
+Timer: 63 ticks
+Thread: 30 idle ticks, 27 kernel ticks, 6 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 81 reads, 236 writes
+hd0:1: 163 reads, 304 writes
 hd1:0: 104 reads, 0 writes
-Console: 1010 characters output
+Console: 1057 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...
