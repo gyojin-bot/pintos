@@ -16,8 +16,8 @@ Executing 'exec-boundary':
 (exec-boundary) begin
 exec-boundary: exit(-1)
 Execution of 'exec-boundary' complete.
-Timer: 63 ticks
-Thread: 30 idle ticks, 32 kernel ticks, 1 user ticks
+Timer: 61 ticks
+Thread: 30 idle ticks, 29 kernel ticks, 2 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 107 reads, 452 writes
 hd1:0: 207 reads, 0 writes

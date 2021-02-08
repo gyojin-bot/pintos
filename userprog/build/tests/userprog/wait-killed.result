@@ -1,35 +1,25 @@
 FAIL
-Test output failed to match any acceptable form.
-
-Acceptable output:
-  (wait-killed) begin
-  (child-bad) begin
-  load: pintos: open failed
-  child-bad: exit(-1)
-  (wait-killed) wait(exec()) = -1
-  (wait-killed) end
-  wait-killed: exit(0)
-Differences in `diff -u' format:
-  (wait-killed) begin
-- (child-bad) begin
-- load: pintos: open failed
-- child-bad: exit(-1)
-- (wait-killed) wait(exec()) = -1
-- (wait-killed) end
-- wait-killed: exit(0)
-+ wait-killed: exit(-1)
-Acceptable output:
-  (wait-killed) begin
-  (child-bad) begin
-  child-bad: exit(-1)
-  (wait-killed) wait(exec()) = -1
-  (wait-killed) end
-  wait-killed: exit(0)
-Differences in `diff -u' format:
-  (wait-killed) begin
-- (child-bad) begin
-- child-bad: exit(-1)
-- (wait-killed) wait(exec()) = -1
-- (wait-killed) end
-- wait-killed: exit(0)
-+ wait-killed: exit(-1)
+Kernel panic in run: PANIC at ../../threads/thread.c:323 in thread_current(): assertion `is_thread(t)' failed.
+Call stack: 0x8004216fcb 0x80042072a5 0x8004206ce8 0x8004210da3 0x80042094f5 0x8004209913 0x800421904e 0x8004219235 0x8004219290 0x800420bb51 0x800420bc30 0x800420c961 0x800420cbbe 0x800420cda2 0x800420d647 0x800421b3d4 0x800421b285 0x800421ae81 0x800421a8be 0x800421a62b 0x80042077f1
+Translation of call stack:
+0x0000008004216fcb: debug_panic (lib/kernel/debug.c:32)
+0x00000080042072a5: thread_current (threads/thread.c:324)
+0x0000008004206ce8: thread_tick (threads/thread.c:154)
+0x0000008004210da3: timer_interrupt (devices/timer.c:135)
+0x00000080042094f5: intr_handler (threads/interrupt.c:352)
+0x0000008004209913: intr_entry (threads/intr-stubs.o:?)
+0x000000800421904e: bitmap_contains (lib/kernel/bitmap.c:238)
+0x0000008004219235: bitmap_scan (lib/kernel/bitmap.c:279)
+0x0000008004219290: bitmap_scan_and_flip (lib/kernel/bitmap.c:294)
+0x000000800420bb51: palloc_get_multiple (threads/palloc.c:267 (discriminator 4))
+0x000000800420bc30: palloc_get_page (threads/palloc.c:297)
+0x000000800420c961: pgdir_walk (threads/mmu.c:18)
+0x000000800420cbbe: pdpe_walk (threads/mmu.c:49)
+0x000000800420cda2: pml4e_walk (threads/mmu.c:82)
+0x000000800420d647: pml4_set_page (threads/mmu.c:239)
+0x000000800421b3d4: install_page (userprog/process.c:643 (discriminator 1))
+0x000000800421b285: load_segment (userprog/process.c:593)
+0x000000800421ae81: load (userprog/process.c:463)
+0x000000800421a8be: process_exec (userprog/process.c:195)
+0x000000800421a62b: initd (userprog/process.c:79)
+0x00000080042077f1: kernel_thread (threads/thread.c:501)

@@ -19,8 +19,8 @@ Differences in `diff -u' format:
   (rox-child) begin
   (rox-child) open "child-rox"
   (rox-child) read "child-rox"
-- (rox-child) write "child-rox"
-- (rox-child) exec "child-rox 1"
+  (rox-child) write "child-rox"
+  (rox-child) exec "child-rox 1"
 - (child-rox) begin
 - (child-rox) try to write "child-rox"
 - (child-rox) try to write "child-rox"

@@ -1,20 +1,57 @@
 FAIL
-Kernel panic in run: PANIC at ../../threads/thread.c:323 in thread_current(): assertion `is_thread(t)' failed.
-Call stack: 0x8004216fcb 0x80042072a5 0x800420ad6b 0x800420ac6a 0x800420bb68 0x800420bc30 0x800420c961 0x800420cbbe 0x800420cda2 0x800420d647 0x800421b3d4 0x800421b285 0x800421ae81 0x800421a8be 0x800421a62b 0x80042077f1
-Translation of call stack:
-0x0000008004216fcb: debug_panic (lib/kernel/debug.c:32)
-0x00000080042072a5: thread_current (threads/thread.c:324)
-0x000000800420ad6b: lock_held_by_current_thread (threads/synch.c:280)
-0x000000800420ac6a: lock_release (threads/synch.c:261)
-0x000000800420bb68: palloc_get_multiple (threads/palloc.c:271 (discriminator 4))
-0x000000800420bc30: palloc_get_page (threads/palloc.c:297)
-0x000000800420c961: pgdir_walk (threads/mmu.c:18)
-0x000000800420cbbe: pdpe_walk (threads/mmu.c:49)
-0x000000800420cda2: pml4e_walk (threads/mmu.c:82)
-0x000000800420d647: pml4_set_page (threads/mmu.c:239)
-0x000000800421b3d4: install_page (userprog/process.c:643 (discriminator 1))
-0x000000800421b285: load_segment (userprog/process.c:593)
-0x000000800421ae81: load (userprog/process.c:463)
-0x000000800421a8be: process_exec (userprog/process.c:195)
-0x000000800421a62b: initd (userprog/process.c:79)
-0x00000080042077f1: kernel_thread (threads/thread.c:501)
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (syn-write) begin
+  (syn-write) create "stuff"
+  (syn-write) exec child 1 of 10: "child-syn-wrt 0"
+  (syn-write) exec child 2 of 10: "child-syn-wrt 1"
+  (syn-write) exec child 3 of 10: "child-syn-wrt 2"
+  (syn-write) exec child 4 of 10: "child-syn-wrt 3"
+  (syn-write) exec child 5 of 10: "child-syn-wrt 4"
+  (syn-write) exec child 6 of 10: "child-syn-wrt 5"
+  (syn-write) exec child 7 of 10: "child-syn-wrt 6"
+  (syn-write) exec child 8 of 10: "child-syn-wrt 7"
+  (syn-write) exec child 9 of 10: "child-syn-wrt 8"
+  (syn-write) exec child 10 of 10: "child-syn-wrt 9"
+  (syn-write) wait for child 1 of 10 returned 0 (expected 0)
+  (syn-write) wait for child 2 of 10 returned 1 (expected 1)
+  (syn-write) wait for child 3 of 10 returned 2 (expected 2)
+  (syn-write) wait for child 4 of 10 returned 3 (expected 3)
+  (syn-write) wait for child 5 of 10 returned 4 (expected 4)
+  (syn-write) wait for child 6 of 10 returned 5 (expected 5)
+  (syn-write) wait for child 7 of 10 returned 6 (expected 6)
+  (syn-write) wait for child 8 of 10 returned 7 (expected 7)
+  (syn-write) wait for child 9 of 10 returned 8 (expected 8)
+  (syn-write) wait for child 10 of 10 returned 9 (expected 9)
+  (syn-write) open "stuff"
+  (syn-write) read "stuff"
+  (syn-write) end
+Differences in `diff -u' format:
+  (syn-write) begin
+  (syn-write) create "stuff"
+  (syn-write) exec child 1 of 10: "child-syn-wrt 0"
+  (syn-write) exec child 2 of 10: "child-syn-wrt 1"
+  (syn-write) exec child 3 of 10: "child-syn-wrt 2"
+  (syn-write) exec child 4 of 10: "child-syn-wrt 3"
+  (syn-write) exec child 5 of 10: "child-syn-wrt 4"
+  (syn-write) exec child 6 of 10: "child-syn-wrt 5"
+  (syn-write) exec child 7 of 10: "child-syn-wrt 6"
+  (syn-write) exec child 8 of 10: "child-syn-wrt 7"
+  (syn-write) exec child 9 of 10: "child-syn-wrt 8"
+  (syn-write) exec child 10 of 10: "child-syn-wrt 9"
+- (syn-write) wait for child 1 of 10 returned 0 (expected 0)
+- (syn-write) wait for child 2 of 10 returned 1 (expected 1)
+- (syn-write) wait for child 3 of 10 returned 2 (expected 2)
+- (syn-write) wait for child 4 of 10 returned 3 (expected 3)
+- (syn-write) wait for child 5 of 10 returned 4 (expected 4)
+- (syn-write) wait for child 6 of 10 returned 5 (expected 5)
+- (syn-write) wait for child 7 of 10 returned 6 (expected 6)
+- (syn-write) wait for child 8 of 10 returned 7 (expected 7)
+- (syn-write) wait for child 9 of 10 returned 8 (expected 8)
+- (syn-write) wait for child 10 of 10 returned 9 (expected 9)
+- (syn-write) open "stuff"
+- (syn-write) read "stuff"
+- (syn-write) end
+
+(Process exit codes are excluded for matching purposes.)

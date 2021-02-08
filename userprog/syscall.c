@@ -202,7 +202,7 @@ int wait (tid_t pid)
 bool create(const char *file , unsigned initial_size)
 {
     /* 파일이름과크기에해당하는파일생성*/
-    if (file == NULL)
+    if (file == NULL || file =="")
         exit(-1);
     // bool success = filesys_create(file, initial_size);
     // /* 파일생성성공시true 반환, 실패시false 반환*/
@@ -226,8 +226,8 @@ bool remove(const char *file)
 int write(int fd, const void *buffer, unsigned size)
 {
     lock_acquire(&filesys_lock);
-    
-    struct file *f = process_get_file(fd);
+
+    struct file *f = thread_current()->fd_table[fd];
 
     if(fd == 1){
         putbuf(buffer, size);
@@ -246,7 +246,7 @@ int write(int fd, const void *buffer, unsigned size)
 }
 
 int open(const char *file){
-    if (file == NULL)
+    if (file == NULL || file =="")
         exit(-1);
     struct file *f = filesys_open(file);
     if (f == NULL)
@@ -288,12 +288,13 @@ int read(int fd, void *buffer, unsigned size){
 }
 
 void seek(int fd, unsigned position){
-    struct file *f = process_get_file(fd);
+    struct file *f = thread_current()->fd_table[fd];
+
     file_seek(f, position);    
 }
 
 unsigned tell(int fd){
-    struct file *f = process_get_file(fd);
+    struct file *f = thread_current()->fd_table[fd];
     return file_tell(f);
 }
 
