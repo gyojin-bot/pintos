@@ -174,7 +174,7 @@ void exit (int status)
     /* 프로세스종료메시지출력,
     출력양식: “프로세스이름: exit(종료상태)” */
     // if(thread_current()->parent)
-        printf("%s: exit(%d)\n", thread_name(), status);
+    printf("%s: exit(%d)\n", thread_name(), status);
     thread_current()->exit_status = status;
     thread_exit();
     /* 스레드종료*/
@@ -200,7 +200,8 @@ pid_t Fork (const char *thread_name, struct intr_frame* f){
 
 int exec (const char *file)
 {
-    return wait(process_create_initd(file));
+    // return wait(process_create_initd(file));
+    return process_exec(file);
     // struct thread *child = get_child_process(pid);
     // sema_down(&child->load);
 

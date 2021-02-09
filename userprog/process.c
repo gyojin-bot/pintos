@@ -210,9 +210,12 @@ error:
  * Returns -1 on fail. */
 int process_exec(void *f_name)
 {
-    char *file_name = f_name;
+    static char file_name[64];
+    memcpy(file_name, f_name, 64);
+    // char *file_name = f_name;
     bool success;
     struct thread *t = thread_current();
+    // bool flag = strcmp(t->name, f_name);
     /* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -222,7 +225,8 @@ int process_exec(void *f_name)
     _if.eflags = FLAG_IF | FLAG_MBS;
 
     /* We first kill the current context */
-
+    //t->name = f_name;
+    
     process_cleanup();
 
     /* And then load the binary */
@@ -238,9 +242,9 @@ int process_exec(void *f_name)
     // argument_stack(&file_name, count, &_if.es);
 
     /* If load failed, quit. */
-    palloc_free_page(file_name);
+    //palloc_free_page(file_name);
     if (!success)
-        thread_exit();
+        exit(-1);
 
     /* Start switched process. */
     do_iret(&_if);
@@ -423,11 +427,13 @@ load(const char *file_name, struct intr_frame *if_)
     char *save_ptr;
     char *token;
     int count = 0;
-    char* sArr[LOADER_ARGS_LEN];
+    char* sArr[LOADER_ARGS_LEN / 2];
     // sArr[0] = NULL;
 
+    // printf("파일이름1 :: %s\n", file_name);
     for (sArr[count] = strtok_r(file_name, " ", &save_ptr); sArr[count] != NULL; sArr[count] = strtok_r(NULL, " ", &save_ptr))
         count++;
+    // printf("파일이름2 :: %s\n", file_name);
     
     // if_->R.rdi = count;
     // if_->R.rsi = sArr;
