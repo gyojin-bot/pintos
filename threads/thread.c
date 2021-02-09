@@ -225,6 +225,7 @@ tid_t thread_create(const char *name, int priority,
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
     t->parent_fd = 2;
+    t->parent = parent;
     /* 세마포어 초기화*/
     sema_init(&t->exit, 0);
     sema_init(&t->load, 0);
@@ -319,7 +320,7 @@ thread_current(void)
        have overflowed its stack.  Each thread has less than 4 kB
        of stack, so a few big automatic arrays or moderate
        recursion can cause stack overflow. */
-    // printf("curr thread !! :: %s\n\n", t->name);
+    //printf("curr thread !! :: %s\n\n", t->name);
     ASSERT(is_thread(t));
     ASSERT(t->status == THREAD_RUNNING);
 
@@ -340,7 +341,7 @@ void thread_exit(void)
     ASSERT(!intr_context());
 
 #ifdef USERPROG
-    // printf("sema upppppp\n\n");
+    //printf("sema upppppp %d \n\n", thread_current()->tid);
     process_exit();
     sema_up(&thread_current()->exit);
 #endif

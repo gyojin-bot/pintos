@@ -1,5 +1,5 @@
 {
     "files.associations": {
-        "serial.h": "c"
+        "intrinsic.h": "c"
     }
 }

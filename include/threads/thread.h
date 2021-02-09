@@ -112,6 +112,7 @@ struct thread {
     struct file* fd_table[128];
     // 부모 프로세스, 자식 프로세스 선언
     int parent_fd; //Parent descriptor
+    struct thread* parent;
     struct list child_list;
     struct list_elem child_elem;
     /* Exit semaphore, Load Semaphore*/
@@ -119,7 +120,7 @@ struct thread {
     struct semaphore load;
     /* 프로세스의 유저 프로그램 메모리 적재 여부*/
     bool load_success;
-    bool process_end;
+    // bool process_end;
     /*Exit 호출 시 종료 Status*/
     int exit_status;
 #endif

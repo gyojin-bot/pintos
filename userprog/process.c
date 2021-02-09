@@ -86,8 +86,26 @@ initd(void *f_name)
 tid_t process_fork(const char *name, struct intr_frame *if_ UNUSED)
 {
     /* Clone current thread to new thread.*/
-    return thread_create(name,
-                         PRI_DEFAULT, __do_fork, thread_current());
+    // struct thread* curr = thread_current();
+    // struct intr_frame parent_if;
+    //memcpy(&thread_current()->pf, if_, sizeof(struct intr_frame));
+    // curr->tf = if_;
+    // curr->tf.R.rax = if_->R.rax;
+    // curr->tf.R.rdi = if_->R.rdi;
+    // curr->tf.R.rsi = if_->R.rsi;
+    // curr->tf.R.rdx = if_->R.rdx;
+    // curr->tf.R.rcx = if_->R.rcx;
+    // curr->tf.R.r8 = if_->R.r8;
+    // curr->tf.R.r9 = if_->R.r9;
+    // curr->tf.R.r10 = if_->R.r10;
+    // curr->tf.R.r11 = if_->R.r11;
+    // thread_current()->tf = if_;
+    // printf("process fork의 tf :: %p\n", curr->tf);
+    // printf("process fork의 if :: %p\n", if_->rsp);
+    tid_t child_tid = thread_create(name, PRI_DEFAULT, __do_fork, if_);
+    struct thread* child_thread = get_child_process(child_tid);
+    sema_down(&child_thread->load);
+    return child_tid;
 }
 
 #ifndef VM
@@ -103,21 +121,29 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
     bool writable;
 
     /* 1. TODO: If the parent_page is kernel page, then return immediately. */
+    if(!is_user_vaddr(va))
+        return true;
 
     /* 2. Resolve VA from the parent's page map level 4. */
     parent_page = pml4_get_page(parent->pml4, va);
 
     /* 3. TODO: Allocate new PAL_USER page for the child and set result to
 	 *    TODO: NEWPAGE. */
+    newpage = palloc_get_page(PAL_USER | PAL_ZERO);
+    if (newpage == NULL)
+        return false;
 
     /* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
 	 *    TODO: according to the result). */
+    memcpy(newpage, parent_page, PGSIZE);
+    writable = is_writable(pte);
 
     /* 5. Add new page to child's page table at address VA with WRITABLE
 	 *    permission. */
     if (!pml4_set_page(current->pml4, va, newpage, writable))
     {
+        return false;
         /* 6. TODO: if fail to insert page, do error handling. */
     }
     return true;
@@ -132,10 +158,13 @@ static void
 __do_fork(void *aux)
 {
     struct intr_frame if_;
-    struct thread *parent = (struct thread *)aux;
+    //struct thread *parent = (struct thread *)aux;
     struct thread *current = thread_current();
+    struct thread *parent = current->parent;
     /* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
-    struct intr_frame *parent_if;
+    struct intr_frame *parent_if = (struct intr_frame*)aux;
+    //struct intr_frame *parent_if = &parent->pf;
+    //printf("do fork의 parent if :: %p\n", parent_if);
     bool succ = true;
 
     /* 1. Read the cpu context to local stack. */
@@ -161,16 +190,22 @@ __do_fork(void *aux)
 	 * TODO:       in include/filesys/file.h. Note that parent should not return
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
+    for (int i = 2; i < parent->parent_fd; ++i){
+        current->fd_table[i] = file_duplicate(parent->fd_table[i]);
+    }
 
     process_init();
 
     /* Finally, switch to the newly created process. */
-    if (succ)
-        do_iret(&if_);
+    sema_up(&thread_current()->load);
+    if (succ){
+        if_.R.rax = 0;
+        do_iret(&if_);  
+    }
 error:
+    sema_up(&thread_current()->load);
     thread_exit();
 }
-
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
 int process_exec(void *f_name)
@@ -235,7 +270,8 @@ int process_wait(tid_t child_tid UNUSED)
     
     /* 부모 프로세스 진행 */
     sema_down(&child_thread->exit);
-    int exit_status = child_thread->status;
+    int exit_status = child_thread->exit_status;
+    //printf("exit?? %s %d\n\n", child_thread->name, exit_status);
     remove_child_process(child_thread);
     return exit_status;
 }
@@ -244,7 +280,7 @@ int process_wait(tid_t child_tid UNUSED)
 void process_exit(void)
 {
     struct thread *curr = thread_current();
-    // printf("process_exit\n\n");
+    //printf("process_exit\n\n", curr->name);
     /* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
@@ -577,7 +613,7 @@ load_segment(struct file *file, off_t ofs, uint8_t *upage,
         size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
         /* Get a page of memory. */
-        uint8_t *kpage = palloc_get_page(PAL_USER);
+        uint8_t *kpage = palloc_get_page(PAL_USER | PAL_ZERO);
         if (kpage == NULL)
             return false;
 
