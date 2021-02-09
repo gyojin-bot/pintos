@@ -40,7 +40,7 @@ child-syn-wrt: exit(9)
 syn-write: exit(1)
 Execution of 'syn-write' complete.
 Timer: 87 ticks
-Thread: 30 idle ticks, 37 kernel ticks, 21 user ticks
+Thread: 29 idle ticks, 38 kernel ticks, 20 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 702 reads, 522 writes
 hd1:0: 226 reads, 0 writes

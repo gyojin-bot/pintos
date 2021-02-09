@@ -192,6 +192,7 @@ __do_fork(void *aux)
 	 * TODO:       the resources of parent.*/
     for (int i = 2; i < parent->parent_fd; ++i){
         current->fd_table[i] = file_duplicate(parent->fd_table[i]);
+        current->parent_fd++;
     }
 
     process_init();
@@ -210,8 +211,8 @@ error:
  * Returns -1 on fail. */
 int process_exec(void *f_name)
 {
-    static char file_name[64];
-    memcpy(file_name, f_name, 64);
+    static char file_name[LOADER_ARGS_LEN / 2];
+    memcpy(file_name, f_name, LOADER_ARGS_LEN / 2);
     // char *file_name = f_name;
     bool success;
     struct thread *t = thread_current();

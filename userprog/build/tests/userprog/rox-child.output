@@ -26,7 +26,7 @@ child-rox: exit(1)
 rox-child: exit(1)
 Execution of 'rox-child' complete.
 Timer: 66 ticks
-Thread: 30 idle ticks, 33 kernel ticks, 3 user ticks
+Thread: 29 idle ticks, 33 kernel ticks, 5 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 173 reads, 480 writes
 hd1:0: 220 reads, 0 writes

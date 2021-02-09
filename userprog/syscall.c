@@ -225,7 +225,6 @@ bool create(const char *file , unsigned initial_size)
     /* 파일이름과크기에해당하는파일생성*/
     if (file == NULL || file ==""){
         exit(-1);
-        return 0;
     }
     // bool success = filesys_create(file, initial_size);
     // /* 파일생성성공시true 반환, 실패시false 반환*/
@@ -238,7 +237,7 @@ bool create(const char *file , unsigned initial_size)
 bool remove(const char *file)
 {
     if (file == NULL)
-        exit(-1);
+        return false;
     /* 파일이름에해당하는파일을제거*/
     palloc_free_page(file);
     /* 파일제거성공시true 반환, 실패시false 반환*/
@@ -271,7 +270,7 @@ int write(int fd, const void *buffer, unsigned size)
 
 int open(const char *file){
     if (file == NULL || file =="")
-        exit(-1);
+        return -1;
     struct file *f = filesys_open(file);
     if (f == NULL)
         return -1;
@@ -305,7 +304,7 @@ int read(int fd, void *buffer, unsigned size){
     }
     if(f==NULL){
         lock_release(&filesys_lock);
-        exit(-1);
+        return -1;
     }
     lock_release(&filesys_lock);
     return file_read(f, buffer, size);

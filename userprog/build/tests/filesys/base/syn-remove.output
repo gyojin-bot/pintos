@@ -17,7 +17,7 @@ Executing 'syn-remove':
 (syn-remove) open "deleteme"
 (syn-remove) remove "deleteme"
 Kernel PANIC at ../../threads/palloc.c:305 in palloc_free_multiple(): assertion `pg_ofs (pages) == 0' failed.
-Call stack: 0x8004216fda 0x800420bc9e 0x800420be41 0x800421c36c 0x800421c07e 0x800421be61 0x4001f6 0x40108f 0x4010d8.
+Call stack: 0x8004216fda 0x800420bc9e 0x800420be41 0x800421c379 0x800421c095 0x800421be78 0x4001f6 0x40108f 0x4010d8.
 The `backtrace' program can make call stacks useful.
 Read "Backtraces" in the "Debugging Tools" chapter
 of the Pintos documentation for more information.
