@@ -212,10 +212,17 @@ error:
 int process_exec(void *f_name)
 {
     static char file_name[LOADER_ARGS_LEN / 2];
+    static char table[128];
+    static int count = 2;
     memcpy(file_name, f_name, LOADER_ARGS_LEN / 2);
     // char *file_name = f_name;
     bool success;
     struct thread *t = thread_current();
+    // memcpy(table, t->fd_table, sizeof(fd_table));
+    for (int i = 2; i < t->parent_fd; ++i){
+        table[i] = file_duplicate(t->fd_table[i]);
+        count++;
+    }
     // bool flag = strcmp(t->name, f_name);
     /* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -225,27 +232,33 @@ int process_exec(void *f_name)
     _if.cs = SEL_UCSEG;
     _if.eflags = FLAG_IF | FLAG_MBS;
 
+    printf("=============process-exec=========== %s \n\n", t->name);
     /* We first kill the current context */
     //t->name = f_name;
     
     process_cleanup();
 
     /* And then load the binary */
-    // printf("=============process-exec=========== %s \n\n", t->name);
     // printf("=============process-exec=========== %s \n\n", file_name);
     success = load(file_name, &_if);
     sema_down(&t->load);
+    for (int i = 2; i < count; ++i){
+        t->fd_table[i] = file_duplicate(table[i]);
+        t->parent_fd++;
+    }
     t->load_success = success;
 
-    // printf("after load========!! %s \n", t->name);
     //hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
     
     // argument_stack(&file_name, count, &_if.es);
 
     /* If load failed, quit. */
     //palloc_free_page(file_name);
-    if (!success)
+    printf("after load========!! %s \n", t->name);
+    if (!success){
         exit(-1);
+
+    }
 
     /* Start switched process. */
     do_iret(&_if);
@@ -423,7 +436,6 @@ load(const char *file_name, struct intr_frame *if_)
     if (t->pml4 == NULL)
         goto done;
     process_activate(t);
-    // printf("================in load=================\n\n");
 
     char *save_ptr;
     char *token;
@@ -447,7 +459,10 @@ load(const char *file_name, struct intr_frame *if_)
         printf("load: %s: open failed\n", file_name);
         goto done;
     }
-
+    printf("================in load=================\n\n");
+    t->running = file;
+    file_deny_write(file);
+    // printf("여기????\n\n");
     /* Read and verify executable header. */
     if (file_read(file, &ehdr, sizeof ehdr) != sizeof ehdr || memcmp(ehdr.e_ident, "\177ELF\2\1\1", 7) || ehdr.e_type != 2 || ehdr.e_machine != 0x3E // amd64
         || ehdr.e_version != 1 || ehdr.e_phentsize != sizeof(struct Phdr) || ehdr.e_phnum > 1024)
@@ -531,7 +546,7 @@ load(const char *file_name, struct intr_frame *if_)
 
 done:
     /* We arrive here whether the load is successful or not. */
-    file_close(file);
+    // file_close(file);
     sema_up(&t->load);
     return success;
 }
@@ -818,6 +833,7 @@ void remove_child_process(struct thread *cp){
 
     list_remove(&cp->child_elem);
     //프로세스 디스크립터 메모리 해제 : 고려 필요
+    file_close(cp->running);
     palloc_free_page(cp);
 }
 

@@ -12,6 +12,7 @@
 #include "filesys/filesys.h"
 #include "filesys/file.h"
 #include "lib/kernel/console.h"
+#include "filesys/off_t.h"
 // #include "lib/user/syscall.h"
 // #include "threads/mmu.h"
 // #include "lib/syscall-nr.h"
@@ -67,8 +68,8 @@ syscall_handler (struct intr_frame *f UNUSED) {
     // printf("rsp :: %p\n\n", f->rsp);
     // printf("rax :: %p\n\n", f->R.rdi);
     
-    // int syscall_num = f->R.rax;
-    // printf("syscll num :: %d\n\n", syscall_num);
+    int syscall_num = f->R.rax;
+    printf("syscll num :: %d\n\n", syscall_num);
     switch (f->R.rax)
     {
     case SYS_HALT:                   /* Halt the operating system. */
@@ -261,10 +262,12 @@ int write(int fd, const void *buffer, unsigned size)
         lock_release(&filesys_lock);
         return 0;
     }
+        
+    // file_deny_write(thread_current()->fd_table[fd]);
     if(fd >=2){
-        file_write(f, buffer, size);
+        int result =  file_write(f, buffer, size);
         lock_release(&filesys_lock);
-        return size;
+        return result;
     }
 }
 
@@ -274,6 +277,7 @@ int open(const char *file){
     struct file *f = filesys_open(file);
     if (f == NULL)
         return -1;
+    // file_deny_write(f);
     return process_add_file(f);
 }
 

@@ -120,6 +120,7 @@ struct thread {
     struct semaphore load;
     /* 프로세스의 유저 프로그램 메모리 적재 여부*/
     bool load_success;
+    struct file* running;
     // bool process_end;
     /*Exit 호출 시 종료 Status*/
     int exit_status;
