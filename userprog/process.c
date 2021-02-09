@@ -226,12 +226,13 @@ int process_exec(void *f_name)
     process_cleanup();
 
     /* And then load the binary */
-    // printf("=============process-exec===========\n\n");
+    // printf("=============process-exec=========== %s \n\n", t->name);
+    // printf("=============process-exec=========== %s \n\n", file_name);
     success = load(file_name, &_if);
     sema_down(&t->load);
     t->load_success = success;
 
-    // printf("after load========!!\n");
+    // printf("after load========!! %s \n", t->name);
     //hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
     
     // argument_stack(&file_name, count, &_if.es);

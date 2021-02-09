@@ -67,8 +67,8 @@ syscall_handler (struct intr_frame *f UNUSED) {
     // printf("rsp :: %p\n\n", f->rsp);
     // printf("rax :: %p\n\n", f->R.rdi);
     
-    //int syscall_num = f->R.rax;
-    //printf("syscll num :: %d\n\n", syscall_num);
+    // int syscall_num = f->R.rax;
+    // printf("syscll num :: %d\n\n", syscall_num);
     switch (f->R.rax)
     {
     case SYS_HALT:                   /* Halt the operating system. */
@@ -173,7 +173,8 @@ void exit (int status)
     /* 실행중인스레드구조체를가져옴*/
     /* 프로세스종료메시지출력,
     출력양식: “프로세스이름: exit(종료상태)” */
-    printf("%s: exit(%d)\n", thread_name(), status);
+    // if(thread_current()->parent)
+        printf("%s: exit(%d)\n", thread_name(), status);
     thread_current()->exit_status = status;
     thread_exit();
     /* 스레드종료*/
@@ -199,16 +200,17 @@ pid_t Fork (const char *thread_name, struct intr_frame* f){
 
 int exec (const char *file)
 {
-    int pid = process_create_initd(file);
-    struct thread *child = get_child_process(pid);
+    return wait(process_create_initd(file));
+    // struct thread *child = get_child_process(pid);
+    // sema_down(&child->load);
+
+    // return child->load_success;
+        // return pid;
+    // thread_exit();
+    // return process_exec(file);
     
-    sema_down(&child->load);
-    if(!child->load_success){
-        exit(-1);
-        return 0;
-    }
-    else
-        return pid;
+    // if(exit_status != -1)
+    //     return exit_status;
 }
 
 int wait (tid_t pid)
