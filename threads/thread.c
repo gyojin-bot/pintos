@@ -230,7 +230,7 @@ tid_t thread_create(const char *name, int priority,
     sema_init(&t->exit, 0);
     sema_init(&t->load, 0);
     /* 자식 리스트 초기화*/
-    list_init(&parent->child_list);
+    // list_init(&t->child_list);
     /* 자식 리스트에 추가*/
     list_push_back(&parent->child_list, &t->child_elem);
     #endif
@@ -348,6 +348,7 @@ void thread_exit(void)
 
     /* Just set our status to dying and schedule another process.
        We will be destroyed during the call to schedule_tail(). */
+    // printf("스레드 exit %s\n", thread_name());
     intr_disable();
     
     //thread_current()->status = THREAD_DYING;
@@ -521,7 +522,9 @@ init_thread(struct thread *t, const char *name, int priority)
     t->init_priority = priority;
     // lock_init(t->wait_on_lock);
     list_init(&t->donations);
-    
+    #ifdef USERPROG
+    list_init(&t->child_list);
+    #endif
     t->nice = NICE_DEFAULT;
     t->recent_cpu = RECENT_CPU_DEFAULT;
 }
@@ -705,6 +708,7 @@ schedule(void)
 
 #ifdef USERPROG
     /* Activate the new address space. */
+    // sema_up(&thread_current()->exit);
     process_activate(next);
 #endif
 
