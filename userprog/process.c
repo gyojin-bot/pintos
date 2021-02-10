@@ -103,8 +103,11 @@ tid_t process_fork(const char *name, struct intr_frame *if_ UNUSED)
     // printf("process fork의 tf :: %p\n", curr->tf);
     // printf("process fork의 if :: %p\n", if_->rsp);
     tid_t child_tid = thread_create(name, PRI_DEFAULT, __do_fork, if_);
+    // if(child_tid != TID_ERROR);
     struct thread* child_thread = get_child_process(child_tid);
-    sema_down(&child_thread->load);
+    if (!(child_tid == TID_ERROR))
+        sema_down(&child_thread->load);
+        // remove_child_process(&child_thread->parent);
     return child_tid;
 }
 
@@ -131,7 +134,11 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
 	 *    TODO: NEWPAGE. */
     newpage = palloc_get_page(PAL_USER | PAL_ZERO);
     if (newpage == NULL)
+    {
+        palloc_free_page(parent_page);
+        palloc_free_page(newpage);
         return false;
+    }
 
     /* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
@@ -143,6 +150,8 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
 	 *    permission. */
     if (!pml4_set_page(current->pml4, va, newpage, writable))
     {
+        palloc_free_page(parent_page);
+        palloc_free_page(newpage);
         return false;
         /* 6. TODO: if fail to insert page, do error handling. */
     }
@@ -213,8 +222,8 @@ error:
 int process_exec(void *f_name)
 {
     static char file_name[LOADER_ARGS_LEN / 2];
-    static struct file* table[128];
-    static int count;
+    // static struct file* table[128];
+    // static int count;
     memcpy(file_name, f_name, LOADER_ARGS_LEN / 2);
     // char *file_name = f_name;
     bool success;
@@ -259,7 +268,8 @@ int process_exec(void *f_name)
     /* If load failed, quit. */
     //palloc_free_page(file_name);
     if (!success){
-        exit(-1);
+        // t->parent->child_list;
+        return -1;
 
     }
 
@@ -290,13 +300,15 @@ int process_wait(tid_t child_tid UNUSED)
     // printf("child 스레드 이름 :: %s\n", child_thread->name);
     
     if (child_thread == NULL){
-        return -1;
+        // remove_child_process(child_thread);
+        exit(-1);
     }
     
     /* 부모 프로세스 진행 */
     sema_down(&child_thread->exit);
     // printf("exit?? %s %d\n\n", child_thread->name, child_thread->exit_status);
     int exit_status = child_thread->exit_status;
+    // printf("여기서 터지나요~? %s %d \n", child_thread->name, exit_status);
     remove_child_process(child_thread);
     return exit_status;
 }
@@ -310,11 +322,10 @@ void process_exit(void)
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-    while(curr->parent_fd >= 2){
-        process_close_file(curr->parent_fd);
-        curr->parent_fd--;
+    for (int i = 2; i < curr->parent_fd; ++i){
+        process_close_file(i);
     }
-    curr->parent_fd++;
+    // curr->parent_fd = 2;
     process_cleanup();
     // sema_up(&thread_current()->exit);
 }
@@ -824,12 +835,15 @@ void* argument_stack(char **parse, int count, void **rsp)
 struct thread *get_child_process(int pid){
     struct thread * parent = thread_current();
 
-    for (struct list_elem *e = list_begin(&parent->child_list); e != list_end(&parent->child_list); e = list_next(e))
+    while(!list_empty(&parent->child_list))
     {
-        struct thread *t = list_entry(e, struct thread, child_elem);
-        if (t->tid == pid)
+        for (struct list_elem *e = list_begin(&parent->child_list); e != list_end(&parent->child_list); e = list_next(e))
         {
-            return t;
+            struct thread *t = list_entry(e, struct thread, child_elem);
+            if (t->tid == pid)
+            {
+                return t;
+            }
         }
     }
 
