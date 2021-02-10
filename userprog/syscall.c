@@ -240,14 +240,14 @@ bool create(const char *file , unsigned initial_size)
 
 bool remove(const char *file)
 {
-    if (file == NULL)
+    if (file == NULL || file =="")
         return false;
     /* 파일이름에해당하는파일을제거*/
-    palloc_free_page(file);
+    // filesys_remove(file);
     /* 파일제거성공시true 반환, 실패시false 반환*/
-    if (file == NULL)
-        return true;
-    return false;
+    // if (file == NULL)
+    //     return true;
+    return filesys_remove(file);;
 }
 
 int write(int fd, const void *buffer, unsigned size)

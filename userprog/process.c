@@ -311,11 +311,10 @@ void process_exit(void)
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
     while(curr->parent_fd >= 2){
-        if (curr->fd_table[curr->parent_fd])
-            process_close_file(curr->parent_fd);
+        process_close_file(curr->parent_fd);
         curr->parent_fd--;
     }
-    // curr->parent_fd = 2;
+    curr->parent_fd++;
     process_cleanup();
     // sema_up(&thread_current()->exit);
 }
