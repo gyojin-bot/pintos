@@ -848,14 +848,14 @@ void remove_child_process(struct thread *cp){
 
 int process_add_file(struct file *f){
     struct thread *curr = thread_current();
-    // for (int i = 2; i < 128; ++i){
+    for (int i = 2; i < curr->parent_fd; ++i){
     //     if (strcmp(curr->name, f) == 0)
     //         file_deny_write(f);
     
-    //     if (curr->fd_table[i] == NULL)
-    //         curr->fd_table[i] = f;
-    //         return i;
-    // }
+        if (curr->fd_table[i] == NULL)
+            curr->fd_table[i] = f;
+            return i;
+    }
     curr->fd_table[curr->parent_fd] = f;
     curr->parent_fd += 1;
     return curr->parent_fd-1;

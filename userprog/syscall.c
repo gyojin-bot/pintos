@@ -280,6 +280,7 @@ int open(const char *file){
     struct file *f = filesys_open(file);
     if (f == NULL)
         return -1;
+    // printf("here???? \n\n");
     // file_deny_write(f);
     // if (strcmp(thread_current()->name, file) == 0)
     //     file_deny_write(f);
