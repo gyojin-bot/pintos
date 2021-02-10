@@ -190,8 +190,9 @@ __do_fork(void *aux)
 	 * TODO:       in include/filesys/file.h. Note that parent should not return
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
+    current->parent_fd = 2;
     for (int i = 2; i < parent->parent_fd; ++i){
-        current->fd_table[i] = file_duplicate(parent->fd_table[i]);
+        current->fd_table[i] = parent->fd_table[i];
         current->parent_fd++;
     }
 
@@ -204,7 +205,7 @@ __do_fork(void *aux)
         do_iret(&if_);  
     }
 error:
-    sema_up(&thread_current()->load);
+    // sema_up(&thread_current()->load);
     thread_exit();
 }
 /* Switch the current execution context to the f_name.
@@ -218,7 +219,7 @@ int process_exec(void *f_name)
     // char *file_name = f_name;
     bool success;
     struct thread *t = thread_current();
-    // memcpy(table, t->fd_table, sizeof(fd_table));
+    memcpy(table, t->fd_table, sizeof(fd_table));
     for (int i = 2; i < t->parent_fd; ++i){
         table[i] = file_duplicate(t->fd_table[i]);
         count++;
@@ -232,7 +233,7 @@ int process_exec(void *f_name)
     _if.cs = SEL_UCSEG;
     _if.eflags = FLAG_IF | FLAG_MBS;
 
-    printf("=============process-exec=========== %s \n\n", t->name);
+    // printf("=============process-exec=========== %s \n\n", t->name);
     /* We first kill the current context */
     //t->name = f_name;
     
@@ -254,7 +255,7 @@ int process_exec(void *f_name)
 
     /* If load failed, quit. */
     //palloc_free_page(file_name);
-    printf("after load========!! %s \n", t->name);
+    // printf("after load========!! %s \n", t->name);
     if (!success){
         exit(-1);
 
@@ -310,6 +311,7 @@ void process_exit(void)
     }
     curr->parent_fd++;
     process_cleanup();
+    // sema_up(&thread_current()->exit);
 }
 
 /* Free the current process's resources. */
@@ -459,7 +461,7 @@ load(const char *file_name, struct intr_frame *if_)
         printf("load: %s: open failed\n", file_name);
         goto done;
     }
-    printf("================in load=================\n\n");
+    // printf("================in load=================\n\n");
     t->running = file;
     file_deny_write(file);
     // printf("여기????\n\n");
@@ -833,12 +835,21 @@ void remove_child_process(struct thread *cp){
 
     list_remove(&cp->child_elem);
     //프로세스 디스크립터 메모리 해제 : 고려 필요
+    // process_exit(cp);
     file_close(cp->running);
     palloc_free_page(cp);
 }
 
 int process_add_file(struct file *f){
     struct thread *curr = thread_current();
+    // for (int i = 2; i < 128; ++i){
+    //     if (strcmp(curr->name, f) == 0)
+    //         file_deny_write(f);
+    
+    //     if (curr->fd_table[i] == NULL)
+    //         curr->fd_table[i] = f;
+    //         return i;
+    // }
     curr->fd_table[curr->parent_fd] = f;
     curr->parent_fd += 1;
     return curr->parent_fd-1;

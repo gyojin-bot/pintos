@@ -68,8 +68,8 @@ syscall_handler (struct intr_frame *f UNUSED) {
     // printf("rsp :: %p\n\n", f->rsp);
     // printf("rax :: %p\n\n", f->R.rdi);
     
-    int syscall_num = f->R.rax;
-    printf("syscll num :: %d\n\n", syscall_num);
+    // int syscall_num = f->R.rax;
+    // printf("syscll num :: %d\n\n", syscall_num);
     switch (f->R.rax)
     {
     case SYS_HALT:                   /* Halt the operating system. */
@@ -217,7 +217,7 @@ int exec (const char *file)
 
 int wait (tid_t pid)
 {
-    //printf("기다려~~ %s, %d\n", thread_name(), thread_current()->tid);
+    // printf("기다려~~ %s, %d\n", thread_name(), thread_current()->tid);
     return process_wait(pid);
 }
 
@@ -264,6 +264,7 @@ int write(int fd, const void *buffer, unsigned size)
     }
         
     // file_deny_write(thread_current()->fd_table[fd]);
+    // printf("here?? %d\n\n", thread_current()->fd_table[fd]->deny_write);
     if(fd >=2){
         int result =  file_write(f, buffer, size);
         lock_release(&filesys_lock);
@@ -278,6 +279,12 @@ int open(const char *file){
     if (f == NULL)
         return -1;
     // file_deny_write(f);
+    // if (strcmp(thread_current()->name, file) == 0)
+    //     file_deny_write(f);
+    // for (int i = 2; i < 128; ++i){
+    //     if (strcmp(thread_name(), f) == 0)
+    //         file_deny_write(f);
+    // }
     return process_add_file(f);
 }
 
