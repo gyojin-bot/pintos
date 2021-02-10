@@ -190,11 +190,11 @@ __do_fork(void *aux)
 	 * TODO:       in include/filesys/file.h. Note that parent should not return
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
-    current->parent_fd = 2;
     for (int i = 2; i < parent->parent_fd; ++i){
-        current->fd_table[i] = parent->fd_table[i];
-        current->parent_fd++;
+        if(parent->fd_table[i])
+            current->fd_table[i] = file_duplicate(parent->fd_table[i]);
     }
+    current->parent_fd = parent->parent_fd;
 
     process_init();
 
@@ -213,17 +213,17 @@ error:
 int process_exec(void *f_name)
 {
     static char file_name[LOADER_ARGS_LEN / 2];
-    static char table[128];
-    static int count = 2;
+    // static char table[128];
+    // static int count = 2;
     memcpy(file_name, f_name, LOADER_ARGS_LEN / 2);
     // char *file_name = f_name;
     bool success;
     struct thread *t = thread_current();
-    memcpy(table, t->fd_table, sizeof(fd_table));
-    for (int i = 2; i < t->parent_fd; ++i){
-        table[i] = file_duplicate(t->fd_table[i]);
-        count++;
-    }
+    // memcpy(table, t->fd_table, sizeof(t->fd_table));
+    // for (int i = 2; i < t->parent_fd; ++i){
+    //     table[i] = file_duplicate(t->fd_table[i]);
+    //     count++;
+    // }
     // bool flag = strcmp(t->name, f_name);
     /* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -243,10 +243,10 @@ int process_exec(void *f_name)
     // printf("=============process-exec=========== %s \n\n", file_name);
     success = load(file_name, &_if);
     sema_down(&t->load);
-    for (int i = 2; i < count; ++i){
-        t->fd_table[i] = file_duplicate(table[i]);
-        t->parent_fd++;
-    }
+    // for (int i = 2; i < count; ++i){
+    //     t->fd_table[i] = file_duplicate(table[i]);
+    //     t->parent_fd++;
+    // }
     t->load_success = success;
 
     //hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
