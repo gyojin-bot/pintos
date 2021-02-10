@@ -202,9 +202,12 @@ pid_t Fork (const char *thread_name, struct intr_frame* f){
 int exec (const char *file)
 {
     // return wait(process_create_initd(file));
-    return process_exec(file);
-    // struct thread *child = get_child_process(pid);
+    // printf("process_exit %s\n\n", thread_name());
+    // int child_pid = process_exec(file);
+    // struct thread *child = get_child_process(child_pid);
     // sema_down(&child->load);
+    // return child_pid;
+    return process_exec(file);
 
     // return child->load_success;
         // return pid;
@@ -251,13 +254,13 @@ int write(int fd, const void *buffer, unsigned size)
 {
     lock_acquire(&filesys_lock);
 
-    struct file *f = thread_current()->fd_table[fd];
-
     if(fd == 1){
         putbuf(buffer, size);
         lock_release(&filesys_lock);
         return size;
     }
+    struct file *f = thread_current()->fd_table[fd];
+
     if(f==NULL){
         lock_release(&filesys_lock);
         return 0;
@@ -265,29 +268,28 @@ int write(int fd, const void *buffer, unsigned size)
         
     // file_deny_write(thread_current()->fd_table[fd]);
     // printf("here?? %d\n\n", thread_current()->fd_table[fd]->deny_write);
-    if(fd >=2){
-        int result =  file_write(f, buffer, size);
-        lock_release(&filesys_lock);
-        return result;
-    }
+    int result =  file_write(f, buffer, size);
+    lock_release(&filesys_lock);
+    return result;
 }
 
 int open(const char *file){
     if (file == NULL || file =="")
         return -1;
-    lock_acquire(&filesys_lock);
+    // lock_acquire(&filesys_lock);
     struct file *f = filesys_open(file);
     if (f == NULL)
         return -1;
     // file_deny_write(f);
     // if (strcmp(thread_current()->name, file) == 0)
     //     file_deny_write(f);
-    // for (int i = 2; i < 128; ++i){
-    //     if (strcmp(thread_name(), f) == 0)
-    //         file_deny_write(f);
+    // for (int i = 2; i < thread_current()->parent_fd; ++i){
+    //     if (strcmp(thread_name(), file) == 0)
+    //         return i;
+            // file_deny_write(f);
     // }
     int result = process_add_file(f);
-    lock_release(&filesys_lock);
+    // lock_release(&filesys_lock);
     return result;
 }
 
@@ -304,10 +306,8 @@ int filesize(int fd){
 
 int read(int fd, void *buffer, unsigned size){
     lock_acquire(&filesys_lock);
-    struct file *f = thread_current()->fd_table[fd];
-    int i = 0;
-    
     if(fd == 0){
+        int i = 0;
         while(i<size){
             *(char*)buffer = input_getc();
             buffer = buffer + 1;
@@ -316,6 +316,8 @@ int read(int fd, void *buffer, unsigned size){
         lock_release(&filesys_lock);
         return size;
     }
+    struct file *f = thread_current()->fd_table[fd];
+    
     if(f==NULL){
         lock_release(&filesys_lock);
         return -1;

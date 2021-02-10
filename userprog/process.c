@@ -213,17 +213,19 @@ error:
 int process_exec(void *f_name)
 {
     static char file_name[LOADER_ARGS_LEN / 2];
-    // static char table[128];
-    // static int count = 2;
+    static struct file* table[128];
+    static int count;
     memcpy(file_name, f_name, LOADER_ARGS_LEN / 2);
     // char *file_name = f_name;
     bool success;
     struct thread *t = thread_current();
     // memcpy(table, t->fd_table, sizeof(t->fd_table));
     // for (int i = 2; i < t->parent_fd; ++i){
-    //     table[i] = file_duplicate(t->fd_table[i]);
-    //     count++;
+    //     printf("두포크 파일 복사중... %p\n", t->fd_table[i]);
+    //     if (t->fd_table[i])
+    //         table[i] = file_duplicate(t->fd_table[i]);
     // }
+    // count = t->parent_fd;
     // bool flag = strcmp(t->name, f_name);
     /* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -240,27 +242,28 @@ int process_exec(void *f_name)
     process_cleanup();
 
     /* And then load the binary */
-    // printf("=============process-exec=========== %s \n\n", file_name);
+    // printf("=============before load=========== %s \n", t->name);
     success = load(file_name, &_if);
     sema_down(&t->load);
+    // printf("after load========!! %s \n", t->name);
     // for (int i = 2; i < count; ++i){
-    //     t->fd_table[i] = file_duplicate(table[i]);
-    //     t->parent_fd++;
+    //     if (table[i])
+    //         t->fd_table[i] = file_duplicate(table[i]);
     // }
+    // t->parent_fd = count;
     t->load_success = success;
 
     //hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
     
     // argument_stack(&file_name, count, &_if.es);
-
     /* If load failed, quit. */
     //palloc_free_page(file_name);
-    // printf("after load========!! %s \n", t->name);
     if (!success){
         exit(-1);
 
     }
 
+    // printf("process_exec %s\n\n", thread_name());
     /* Start switched process. */
     do_iret(&_if);
     NOT_REACHED();
@@ -283,6 +286,8 @@ int process_wait(tid_t child_tid UNUSED)
 	 * XXX:       implementing the process_wait. */
 
     struct thread *child_thread = get_child_process(child_tid);
+    // printf("child 스레드 주소 :: %p\n", child_thread);
+    // printf("child 스레드 이름 :: %s\n", child_thread->name);
     
     if (child_thread == NULL){
         return -1;
@@ -290,8 +295,8 @@ int process_wait(tid_t child_tid UNUSED)
     
     /* 부모 프로세스 진행 */
     sema_down(&child_thread->exit);
+    // printf("exit?? %s %d\n\n", child_thread->name, child_thread->exit_status);
     int exit_status = child_thread->exit_status;
-    //printf("exit?? %s %d\n\n", child_thread->name, exit_status);
     remove_child_process(child_thread);
     return exit_status;
 }
@@ -300,16 +305,17 @@ int process_wait(tid_t child_tid UNUSED)
 void process_exit(void)
 {
     struct thread *curr = thread_current();
-    //printf("process_exit\n\n", curr->name);
+    // printf("process_exit %s\n\n", curr->name);
     /* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
     while(curr->parent_fd >= 2){
-        process_close_file(curr->parent_fd);
+        if (curr->fd_table[curr->parent_fd])
+            process_close_file(curr->parent_fd);
         curr->parent_fd--;
     }
-    curr->parent_fd++;
+    // curr->parent_fd = 2;
     process_cleanup();
     // sema_up(&thread_current()->exit);
 }
@@ -834,6 +840,7 @@ struct thread *get_child_process(int pid){
 void remove_child_process(struct thread *cp){
 
     list_remove(&cp->child_elem);
+    // printf("자식죽이기~~ \n", cp->name);
     //프로세스 디스크립터 메모리 해제 : 고려 필요
     // process_exit(cp);
     file_close(cp->running);
@@ -869,6 +876,8 @@ struct file *process_get_file(int fd){
 }
 
 void process_close_file(int fd){
+    // file_allow_write(thread_current()->fd_table[fd]);
     file_close(thread_current()->fd_table[fd]);
     thread_current()->fd_table[fd] = NULL;
+    // printf("파일을 닫습니다~ %p\n", thread_current()->fd_table[fd]);
 }
