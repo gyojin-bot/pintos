@@ -275,6 +275,7 @@ int write(int fd, const void *buffer, unsigned size)
 int open(const char *file){
     if (file == NULL || file =="")
         return -1;
+    lock_acquire(&filesys_lock);
     struct file *f = filesys_open(file);
     if (f == NULL)
         return -1;
@@ -285,7 +286,9 @@ int open(const char *file){
     //     if (strcmp(thread_name(), f) == 0)
     //         file_deny_write(f);
     // }
-    return process_add_file(f);
+    int result = process_add_file(f);
+    lock_release(&filesys_lock);
+    return result;
 }
 
 int filesize(int fd){
@@ -317,8 +320,9 @@ int read(int fd, void *buffer, unsigned size){
         lock_release(&filesys_lock);
         return -1;
     }
+    size = file_read(f, buffer, size);
     lock_release(&filesys_lock);
-    return file_read(f, buffer, size);
+    return size;
 }
 
 void seek(int fd, unsigned position){
