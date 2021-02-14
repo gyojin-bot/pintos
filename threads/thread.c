@@ -225,7 +225,15 @@ tid_t thread_create(const char *name, int priority,
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
     t->parent_fd = 2;
+    t->fd_table = palloc_get_page (PAL_ZERO);
+    if (t->fd_table == NULL)
+    {
+      // 되돌리기
+      palloc_free_page (t);
+      return TID_ERROR;
+    }
     t->parent = parent;
+    t->exit_status = 0;
     /* 세마포어 초기화*/
     sema_init(&t->exit, 0);
     sema_init(&t->load, 0);
@@ -235,6 +243,8 @@ tid_t thread_create(const char *name, int priority,
     list_push_back(&parent->child_list, &t->child_elem);
     #endif
     
+    // printf("%s에서 %s를 생성중입니다.\n",thread_current()->name, name);
+
     /* Add to run queue. */
     thread_unblock(t);
     //printf("thread %s creating\n", t->name);
@@ -722,11 +732,12 @@ schedule(void)
            The real destruction logic will be called at the beginning of the
            schedule(). */
         #ifndef USERPROG
-            if (curr && curr->status == THREAD_DYING && curr != initial_thread)
-            {
-                ASSERT(curr != next);
-                list_push_back(&destruction_req, &curr->elem);
-            }
+        if (curr && curr->status == THREAD_DYING && curr != initial_thread && curr->exit.value == 1)
+        {
+            // printf("curr->name : %s", curr->name);
+            ASSERT(curr != next);
+            list_push_back(&destruction_req, &curr->elem);
+        }
         #endif
         /* Before switching the thread, we first save the information
          * of current running. */

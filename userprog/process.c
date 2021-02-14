@@ -104,10 +104,18 @@ tid_t process_fork(const char *name, struct intr_frame *if_ UNUSED)
     // printf("process fork의 if :: %p\n", if_->rsp);
     tid_t child_tid = thread_create(name, PRI_DEFAULT, __do_fork, if_);
     // if(child_tid != TID_ERROR);
-    struct thread* child_thread = get_child_process(child_tid);
     if (!(child_tid == TID_ERROR))
+        {
+        struct thread* child_thread = get_child_process(child_tid);
+        // printf("%s가 %s(%d)의 Load를 기다리기 시작합니다.\n", thread_current()->name, child_thread->name, child_thread->tid);
+        // printf("Semaphore Status : %d\n", child_thread->load.value);
         sema_down(&child_thread->load);
+        // printf("%s가 시작됩니다. %s(%d)의 Load가 완료되었습니다.\n", thread_current()->name, child_thread->name, child_thread->tid);
+        if (child_thread->fork_succ){
+            child_tid = -1;}
+    }
         // remove_child_process(&child_thread->parent);
+    // printf("%d return.\n", child_tid);
     return child_tid;
 }
 
@@ -135,8 +143,8 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
     newpage = palloc_get_page(PAL_USER | PAL_ZERO);
     if (newpage == NULL)
     {
-        palloc_free_page(parent_page);
-        palloc_free_page(newpage);
+        // palloc_free_page(parent_page);
+        // palloc_free_page(newpage);
         return false;
     }
 
@@ -150,7 +158,7 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
 	 *    permission. */
     if (!pml4_set_page(current->pml4, va, newpage, writable))
     {
-        palloc_free_page(parent_page);
+        // palloc_free_page(parent_page);
         palloc_free_page(newpage);
         return false;
         /* 6. TODO: if fail to insert page, do error handling. */
@@ -200,7 +208,7 @@ __do_fork(void *aux)
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
     for (int i = 2; i < parent->parent_fd; ++i){
-        if(parent->fd_table[i])
+        if(parent->fd_table[i] != NULL)
             current->fd_table[i] = file_duplicate(parent->fd_table[i]);
     }
     current->parent_fd = parent->parent_fd;
@@ -208,13 +216,18 @@ __do_fork(void *aux)
     process_init();
 
     /* Finally, switch to the newly created process. */
-    sema_up(&thread_current()->load);
+    
+    // printf("%s의 Load가 완료되었습니다. fd 복사 개수 : %d\n", current->name, current->parent_fd);
+    sema_up(&current->load);
+    // printf("Semaphore value : %d\n", thread_current()->load.value);
     if (succ){
         if_.R.rax = 0;
         do_iret(&if_);  
     }
 error:
-    // sema_up(&thread_current()->load);
+    current->fork_succ = 1;
+    sema_up(&current->load);
+    // printf("뭐지?");
     thread_exit();
 }
 /* Switch the current execution context to the f_name.
@@ -266,18 +279,13 @@ int process_exec(void *f_name)
     
     // argument_stack(&file_name, count, &_if.es);
     /* If load failed, quit. */
-    //palloc_free_page(file_name);
     if (!success){
-        // t->parent->child_list;
         return -1;
-
     }
 
-    // printf("process_exec %s\n\n", thread_name());
     /* Start switched process. */
     do_iret(&_if);
     NOT_REACHED();
-
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
@@ -301,14 +309,15 @@ int process_wait(tid_t child_tid UNUSED)
     
     if (child_thread == NULL){
         // remove_child_process(child_thread);
-        exit(-1);
+        return -1;
     }
     
     /* 부모 프로세스 진행 */
+    // printf("%s가 %s의 Exit을 기다립니다.\n", thread_current()->name, child_thread->name);
     sema_down(&child_thread->exit);
     // printf("exit?? %s %d\n\n", child_thread->name, child_thread->exit_status);
     int exit_status = child_thread->exit_status;
-    // printf("여기서 터지나요~? %s %d \n", child_thread->name, exit_status);
+    // printf("%s가 %d로 Exit되어 %s의 기다림이 끝났씁니다.\n", child_thread->name, exit_status, thread_current()->name);
     remove_child_process(child_thread);
     return exit_status;
 }
@@ -326,6 +335,8 @@ void process_exit(void)
         process_close_file(i);
     }
     // curr->parent_fd = 2;
+    palloc_free_page(curr->fd_table);
+    // printf("%s를 종료합니다. \n", curr->name);
     process_cleanup();
     // sema_up(&thread_current()->exit);
 }
@@ -857,21 +868,26 @@ void remove_child_process(struct thread *cp){
     //프로세스 디스크립터 메모리 해제 : 고려 필요
     // process_exit(cp);
     file_close(cp->running);
+    cp->running = NULL;
+    // printf("%s를 다 없애버렸습니다.\n", cp->name);
     palloc_free_page(cp);
+    
 }
 
 int process_add_file(struct file *f){
     struct thread *curr = thread_current();
-    for (int i = 2; i < curr->parent_fd; ++i){
-    //     if (strcmp(curr->name, f) == 0)
-    //         file_deny_write(f);
-    
-        if (curr->fd_table[i] == NULL)
-            curr->fd_table[i] = f;
-            return i;
+    // for (int i = 2; i < curr->parent_fd; ++i){
+    //     if (curr->fd_table[i] == NULL){
+    //         curr->fd_table[i] = f;
+    //         return i;}
+    // }
+    if(curr->parent_fd > 510){
+        file_close(f);
+        return -1;
     }
     curr->fd_table[curr->parent_fd] = f;
     curr->parent_fd += 1;
+    // printf("%s에서 %d 까지 추가되었다.\n",curr->name, curr->parent_fd);
     return curr->parent_fd-1;
 }
 

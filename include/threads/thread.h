@@ -109,7 +109,7 @@ struct thread {
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
-    struct file* fd_table[128];
+    struct file** fd_table;
     // 부모 프로세스, 자식 프로세스 선언
     int parent_fd; //Parent descriptor
     struct thread* parent;
@@ -121,6 +121,7 @@ struct thread {
     /* 프로세스의 유저 프로그램 메모리 적재 여부*/
     bool load_success;
     struct file* running;
+    bool fork_succ;
     // bool process_end;
     /*Exit 호출 시 종료 Status*/
     int exit_status;
