@@ -731,14 +731,14 @@ schedule(void)
            currently used bye the stack.
            The real destruction logic will be called at the beginning of the
            schedule(). */
-        #ifndef USERPROG
-        if (curr && curr->status == THREAD_DYING && curr != initial_thread && curr->exit.value == 1)
+        // #ifndef USERPROG
+        if (curr && curr->status == THREAD_DYING && curr != initial_thread && curr->parent->status == THREAD_DYING)
         {
             // printf("curr->name : %s", curr->name);
             ASSERT(curr != next);
             list_push_back(&destruction_req, &curr->elem);
         }
-        #endif
+        // #endif
         /* Before switching the thread, we first save the information
          * of current running. */
         thread_launch(next);
