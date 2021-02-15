@@ -3978,8 +3978,8 @@ child_0_O: exit(183)
 (multi-oom) end
 multi-oom: exit(0)
 Execution of 'multi-oom' complete.
-Timer: 6884 ticks
-Thread: 29 idle ticks, 856 kernel ticks, 6000 user ticks
+Timer: 6829 ticks
+Thread: 30 idle ticks, 876 kernel ticks, 5923 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 25647 reads, 242 writes
 hd1:0: 107 reads, 0 writes

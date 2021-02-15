@@ -54,19 +54,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
     // uint64_t* syscall_num = f->R.rsp;
     // void* esp = f->rsp;
-    // printf("rax : %d\n", f->R.rax);
-    // printf("rdi : %d\n", f->R.rdi);
-    // printf("rsi : %s\n", f->R.rsi);
-    // printf("rdx : %d\n", f->R.rdx);
-    // printf("cs : %d\n", f->cs);
-    // printf("r10 : %d\n", f->R.r10);
-    // printf("r8 : %d\n", f->R.r8);
-    // printf("r9 : %d\n", f->R.r9);
     //hex_dump(f->rsp, f->rsp, USER_STACK - f->rsp, 1);
     // uint64_t argv = f->R.rsi;
     // uint64_t count = f->R.rdi;
-    // printf("rsp :: %p\n\n", f->rsp);
-    // printf("rax :: %p\n\n", f->R.rdi);
     
     // int syscall_num = f->R.rax;
     // printf("syscll num :: %d\n\n", syscall_num);
@@ -77,24 +67,18 @@ syscall_handler (struct intr_frame *f UNUSED) {
         break;
     
     case SYS_EXIT:                   /* Terminate this process. */
-        //get_argument(f->R.rax, arg, 1);
         exit(f->R.rdi);
         break;
 
     case SYS_FORK:                   /* Clone current process. */
-        //get_argument(f->R.rax, arg, 1);
-        // thread_current()->tf = f;
-        //printf("sys_fork의 if :: %p\n", f);
         f->R.rax = Fork(f->R.rdi, f);
         break;
 
     case SYS_EXEC:                   /* Switch current process. */
-        //get_argument(f->R.rax, arg, 1);
         f->R.rax = exec(f->R.rdi);
         break;
     
     case SYS_WAIT:                   /* Wait for a child process to die. */
-        //get_argument(f->R.rax, arg, 1);
         f->R.rax = wait(f->R.rdi);
         break;
 
@@ -182,27 +166,12 @@ void exit (int status)
 }
 
 pid_t Fork (const char *thread_name, struct intr_frame* f){
-    // struct thread *curr = thread_current();
-    // printf("syscall fork의 if :: %p\n", curr->tf);
-    // thread_current()->tf = *f;
-    // struct intr_frame if_;
-    // memcpy(&if_, thread_current()->tf, sizeof(struct intr_frame));
-    // curr->tf.R.rax = if_->R.rax;
-    // curr->tf.R.rdi = if_->R.rdi;
-    // curr->tf.R.rsi = if_->R.rsi;
-    // curr->tf.R.rdx = if_->R.rdx;
-    // curr->tf.R.rcx = if_->R.rcx;
-    // curr->tf.R.r8 = if_->R.r8;
-    // curr->tf.R.r9 = if_->R.r9;
-    // curr->tf.R.r10 = if_->R.r10;
-    // curr->tf.R.r11 = if_->R.r11;
 	return process_fork(thread_name, f);
 }
 
 int exec (const char *file)
 {
     // return wait(process_create_initd(file));
-    // printf("process_exit %s\n\n", thread_name());
     // int child_pid = process_exec(file);
     // struct thread *child = get_child_process(child_pid);
     // sema_down(&child->load);
@@ -220,7 +189,6 @@ int exec (const char *file)
 
 int wait (tid_t pid)
 {
-    // printf("기다려~~ %s, %d\n", thread_name(), thread_current()->tid);
     return process_wait(pid);
 }
 
@@ -267,7 +235,6 @@ int write(int fd, const void *buffer, unsigned size)
     }
         
     // file_deny_write(thread_current()->fd_table[fd]);
-    // printf("here?? %d\n\n", thread_current()->fd_table[fd]->deny_write);
     int result =  file_write(f, buffer, size);
     lock_release(&filesys_lock);
     return result;
@@ -280,7 +247,6 @@ int open(const char *file){
     struct file *f = filesys_open(file);
     if (f == NULL)
         return -1;
-    // printf("here???? \n\n");
     // file_deny_write(f);
     // if (strcmp(thread_current()->name, file) == 0)
     //     file_deny_write(f);
@@ -296,11 +262,9 @@ int open(const char *file){
 
 int filesize(int fd){
     struct file *f = thread_current()->fd_table[fd];
-    //printf("file length :: %d\n\n", file_length(thread_current()->fd_table[fd]));
     if (f == NULL)
         return -1;
     int size;
-    // printf("here %d\n\n", f->pos);
     size = file_length(f);
     return size;
 }

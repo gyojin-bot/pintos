@@ -135,7 +135,7 @@ struct thread {
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
 
-    int64_t wakeup_tick /* 깨어 나야할 tick 저장 */
+    int64_t wakeup_tick; /* 깨어 나야할 tick 저장 */
 };
 
 /* If false (default), use round-robin scheduler.

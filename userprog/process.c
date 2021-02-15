@@ -55,13 +55,10 @@ tid_t process_create_initd(const char *file_name)
     char *next_ptr;
     file_name = strtok_r(file_name, " ", &next_ptr);
     
-    // printf("process create initd\n\n");
     tid = thread_create(file_name, PRI_DEFAULT, initd, fn_copy);
 
     if (tid == TID_ERROR)
         palloc_free_page(fn_copy);
-
-    // printf("tid %d\n\n", tid);
     return tid;
 }
 
@@ -75,7 +72,6 @@ initd(void *f_name)
 #endif
 
     process_init();
-    // printf("initd\n\n");
     if (process_exec(f_name) < 0)
         PANIC("Fail to launch initd\n");
     NOT_REACHED();
@@ -86,31 +82,11 @@ initd(void *f_name)
 tid_t process_fork(const char *name, struct intr_frame *if_ UNUSED)
 {
     /* Clone current thread to new thread.*/
-    // struct thread* curr = thread_current();
-    // struct intr_frame parent_if;
-    //memcpy(&thread_current()->pf, if_, sizeof(struct intr_frame));
-    // curr->tf = if_;
-    // curr->tf.R.rax = if_->R.rax;
-    // curr->tf.R.rdi = if_->R.rdi;
-    // curr->tf.R.rsi = if_->R.rsi;
-    // curr->tf.R.rdx = if_->R.rdx;
-    // curr->tf.R.rcx = if_->R.rcx;
-    // curr->tf.R.r8 = if_->R.r8;
-    // curr->tf.R.r9 = if_->R.r9;
-    // curr->tf.R.r10 = if_->R.r10;
-    // curr->tf.R.r11 = if_->R.r11;
-    // thread_current()->tf = if_;
-    // printf("process fork의 tf :: %p\n", curr->tf);
-    // printf("process fork의 if :: %p\n", if_->rsp);
     tid_t child_tid = thread_create(name, PRI_DEFAULT, __do_fork, if_);
-    // if(child_tid != TID_ERROR);
     if (!(child_tid == TID_ERROR))
         {
         struct thread* child_thread = get_child_process(child_tid);
-        // printf("%s가 %s(%d)의 Load를 기다리기 시작합니다.\n", thread_current()->name, child_thread->name, child_thread->tid);
-        // printf("Semaphore Status : %d\n", child_thread->load.value);
         sema_down(&child_thread->load);
-        // printf("%s가 시작됩니다. %s(%d)의 Load가 완료되었습니다.\n", thread_current()->name, child_thread->name, child_thread->tid);
         if (child_thread->fork_succ){
             child_tid = -1;}
     }
@@ -181,7 +157,6 @@ __do_fork(void *aux)
     /* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
     struct intr_frame *parent_if = (struct intr_frame*)aux;
     //struct intr_frame *parent_if = &parent->pf;
-    //printf("do fork의 parent if :: %p\n", parent_if);
     bool succ = true;
 
     /* 1. Read the cpu context to local stack. */
@@ -217,9 +192,7 @@ __do_fork(void *aux)
 
     /* Finally, switch to the newly created process. */
     
-    // printf("%s의 Load가 완료되었습니다. fd 복사 개수 : %d\n", current->name, current->parent_fd);
     sema_up(&current->load);
-    // printf("Semaphore value : %d\n", thread_current()->load.value);
     if (succ){
         if_.R.rax = 0;
         do_iret(&if_);  
@@ -227,7 +200,6 @@ __do_fork(void *aux)
 error:
     current->fork_succ = 1;
     sema_up(&current->load);
-    // printf("뭐지?");
     thread_exit();
 }
 /* Switch the current execution context to the f_name.
@@ -243,7 +215,6 @@ int process_exec(void *f_name)
     struct thread *t = thread_current();
     // memcpy(table, t->fd_table, sizeof(t->fd_table));
     // for (int i = 2; i < t->parent_fd; ++i){
-    //     printf("두포크 파일 복사중... %p\n", t->fd_table[i]);
     //     if (t->fd_table[i])
     //         table[i] = file_duplicate(t->fd_table[i]);
     // }
@@ -257,17 +228,14 @@ int process_exec(void *f_name)
     _if.cs = SEL_UCSEG;
     _if.eflags = FLAG_IF | FLAG_MBS;
 
-    // printf("=============process-exec=========== %s \n\n", t->name);
     /* We first kill the current context */
     //t->name = f_name;
     
     process_cleanup();
 
     /* And then load the binary */
-    // printf("=============before load=========== %s \n", t->name);
     success = load(file_name, &_if);
-    sema_down(&t->load);
-    // printf("after load========!! %s \n", t->name);
+    // sema_down(&t->load);
     // for (int i = 2; i < count; ++i){
     //     if (table[i])
     //         t->fd_table[i] = file_duplicate(table[i]);
@@ -275,8 +243,6 @@ int process_exec(void *f_name)
     // t->parent_fd = count;
     t->load_success = success;
 
-    //hex_dump(_if.rsp, (void *)(_if.rsp), USER_STACK - _if.rsp, 1);
-    
     // argument_stack(&file_name, count, &_if.es);
     /* If load failed, quit. */
     if (!success){
@@ -304,8 +270,6 @@ int process_wait(tid_t child_tid UNUSED)
 	 * XXX:       implementing the process_wait. */
 
     struct thread *child_thread = get_child_process(child_tid);
-    // printf("child 스레드 주소 :: %p\n", child_thread);
-    // printf("child 스레드 이름 :: %s\n", child_thread->name);
     
     if (child_thread == NULL){
         // remove_child_process(child_thread);
@@ -313,11 +277,8 @@ int process_wait(tid_t child_tid UNUSED)
     }
     
     /* 부모 프로세스 진행 */
-    // printf("%s가 %s의 Exit을 기다립니다.\n", thread_current()->name, child_thread->name);
     sema_down(&child_thread->exit);
-    // printf("exit?? %s %d\n\n", child_thread->name, child_thread->exit_status);
     int exit_status = child_thread->exit_status;
-    // printf("%s가 %d로 Exit되어 %s의 기다림이 끝났씁니다.\n", child_thread->name, exit_status, thread_current()->name);
     remove_child_process(child_thread);
     return exit_status;
 }
@@ -326,7 +287,6 @@ int process_wait(tid_t child_tid UNUSED)
 void process_exit(void)
 {
     struct thread *curr = thread_current();
-    // printf("process_exit %s\n\n", curr->name);
     /* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
@@ -336,7 +296,6 @@ void process_exit(void)
     }
     // curr->parent_fd = 2;
     palloc_free_page(curr->fd_table);
-    // printf("%s를 종료합니다. \n", curr->name);
     process_cleanup();
     // sema_up(&thread_current()->exit);
 }
@@ -345,7 +304,6 @@ void process_exit(void)
 static void
 process_cleanup(void)
 {
-    // printf("process_cleanup\n\n");
     struct thread *curr = thread_current();
 
 #ifdef VM
@@ -472,14 +430,10 @@ load(const char *file_name, struct intr_frame *if_)
     char* sArr[LOADER_ARGS_LEN / 2];
     // sArr[0] = NULL;
 
-    // printf("파일이름1 :: %s\n", file_name);
     for (sArr[count] = strtok_r(file_name, " ", &save_ptr); sArr[count] != NULL; sArr[count] = strtok_r(NULL, " ", &save_ptr))
         count++;
-    // printf("파일이름2 :: %s\n", file_name);
-    
     // if_->R.rdi = count;
     // if_->R.rsi = sArr;
-
 
     /* Open executable file. */
     file = filesys_open(file_name);
@@ -488,10 +442,9 @@ load(const char *file_name, struct intr_frame *if_)
         printf("load: %s: open failed\n", file_name);
         goto done;
     }
-    // printf("================in load=================\n\n");
     t->running = file;
     file_deny_write(file);
-    // printf("여기????\n\n");
+
     /* Read and verify executable header. */
     if (file_read(file, &ehdr, sizeof ehdr) != sizeof ehdr || memcmp(ehdr.e_ident, "\177ELF\2\1\1", 7) || ehdr.e_type != 2 || ehdr.e_machine != 0x3E // amd64
         || ehdr.e_version != 1 || ehdr.e_phentsize != sizeof(struct Phdr) || ehdr.e_phnum > 1024)
@@ -569,14 +522,12 @@ load(const char *file_name, struct intr_frame *if_)
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
     if_->R.rdi = count;
     if_->R.rsi = argument_stack(&sArr, count, &if_->rsp);
-    // printf("들어옵니까???\n\n");
-    //hex_dump(if_->rsp, (void *)(if_->rsp), USER_STACK - if_->rsp, 1);
     success = true;
 
 done:
     /* We arrive here whether the load is successful or not. */
     // file_close(file);
-    sema_up(&t->load);
+    // sema_up(&t->load);
     return success;
 }
 
@@ -864,12 +815,10 @@ struct thread *get_child_process(int pid){
 void remove_child_process(struct thread *cp){
 
     list_remove(&cp->child_elem);
-    // printf("자식죽이기~~ \n", cp->name);
     //프로세스 디스크립터 메모리 해제 : 고려 필요
     // process_exit(cp);
     file_close(cp->running);
     cp->running = NULL;
-    // printf("%s를 다 없애버렸습니다.\n", cp->name);
     palloc_free_page(cp);
     
 }
@@ -887,7 +836,6 @@ int process_add_file(struct file *f){
     }
     curr->fd_table[curr->parent_fd] = f;
     curr->parent_fd += 1;
-    // printf("%s에서 %d 까지 추가되었다.\n",curr->name, curr->parent_fd);
     return curr->parent_fd-1;
 }
 
@@ -908,5 +856,4 @@ void process_close_file(int fd){
     // file_allow_write(thread_current()->fd_table[fd]);
     file_close(thread_current()->fd_table[fd]);
     thread_current()->fd_table[fd] = NULL;
-    // printf("파일을 닫습니다~ %p\n", thread_current()->fd_table[fd]);
 }

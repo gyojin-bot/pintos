@@ -207,7 +207,6 @@ tid_t thread_create(const char *name, int priority,
     /* Initialize thread. */
     init_thread(t, name, priority);
     tid = t->tid = allocate_tid();
-    // printf("tid ===== %d\n\n", t->tid);
 
     /* Call the kernel_thread if it scheduled.
      * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -243,17 +242,11 @@ tid_t thread_create(const char *name, int priority,
     list_push_back(&parent->child_list, &t->child_elem);
     #endif
     
-    // printf("%s에서 %s를 생성중입니다.\n",thread_current()->name, name);
 
     /* Add to run queue. */
     thread_unblock(t);
-    //printf("thread %s creating\n", t->name);
-    //printf("thread %s current\n", thread_current()->name);
-    //printf("thread %s priority\n", thread_current()->priority);
     if (priority > thread_get_priority())
         thread_yield();
-    // else{
-    //     printf("thread %s yield happend\n", t->name);
     return tid;
 }
 
@@ -289,7 +282,6 @@ void thread_unblock(struct thread *t)
     ASSERT(t->status == THREAD_BLOCKED);
     //list_push_back(&ready_list, &t->elem);
     list_insert_ordered(&ready_list, &t->elem, cmp_priority, NULL); // 준비큐로 넣을 때 우선순위 정렬되어 들어감
-    //printf("%s to ready que :: %d\n", t->name, t->priority);
     t->status = THREAD_READY;
     intr_set_level(old_level);
 }
@@ -330,7 +322,6 @@ thread_current(void)
        have overflowed its stack.  Each thread has less than 4 kB
        of stack, so a few big automatic arrays or moderate
        recursion can cause stack overflow. */
-    //printf("curr thread !! :: %s\n\n", t->name);
     ASSERT(is_thread(t));
     ASSERT(t->status == THREAD_RUNNING);
 
@@ -351,17 +342,14 @@ void thread_exit(void)
     ASSERT(!intr_context());
 
 #ifdef USERPROG
-    //printf("sema upppppp %d \n\n", thread_current()->tid);
     process_exit();
     sema_up(&thread_current()->exit);
 #endif
 
     /* Just set our status to dying and schedule another process.
        We will be destroyed during the call to schedule_tail(). */
-    // printf("스레드 exit %s\n", thread_name());
     intr_disable();
     
-    //thread_current()->status = THREAD_DYING;
     do_schedule(THREAD_DYING);
     NOT_REACHED();
 }
@@ -387,7 +375,6 @@ void thread_yield(void)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-    //printf("current priority %d, new priority : %d\n", thread_current()->priority, new_priority);
     ASSERT(!thread_mlfqs);
     thread_current()->init_priority = new_priority;
     refresh_priority();
@@ -443,7 +430,6 @@ int thread_get_load_avg(void)
     enum intr_level old_level;
     old_level = intr_disable();
     int curr_load_avg = fp_to_int(mult_mixed(load_avg, 100));
-    // msg("load_avg: %d , curr_load_avg: %d", load_avg,curr_load_avg);
     intr_set_level(old_level);
 
     return curr_load_avg;
@@ -542,20 +528,16 @@ init_thread(struct thread *t, const char *name, int priority)
 //=======================================================
 void thread_sleep(int64_t ticks) /* 실행 중인 스레드를 슬립으로 만듬 */
 {
-    // printf("strat thread sleep!!\n");
     enum intr_level old_level;
     struct thread *curr = thread_current();
-    // printf("TID :: %d\n", curr->tid);
     if (curr != idle_thread)
     { //현재 스레드가 idle 스레드가 아닐경우
         old_level = intr_disable();
-        // printf("들어가나요\n");
         curr->wakeup_tick = ticks;                //깨어나야 할 ticks을 저장,
         list_push_back(&sleep_list, &curr->elem); /* 현재 스레드를 슬립 큐에 삽입한 후에 스케줄한다. */
         for (struct list_elem *e = list_begin(&sleep_list); e != list_end(&sleep_list); e = list_next(e))
         {
             struct thread *t = list_entry(e, struct thread, elem);
-            // printf("TID :: %d\n", t->tid);
         }
         thread_block(); //thread의 상태를 BLOCKED로 바꾸고
         // do_schedule(THREAD_READY);
@@ -734,7 +716,6 @@ schedule(void)
         // #ifndef USERPROG
         if (curr && curr->status == THREAD_DYING && curr != initial_thread && curr->parent->status == THREAD_DYING)
         {
-            // printf("curr->name : %s", curr->name);
             ASSERT(curr != next);
             list_push_back(&destruction_req, &curr->elem);
         }
@@ -766,13 +747,10 @@ unblock 한다.
 */
 void thread_awake(int64_t ticks)
 {
-    // printf("start awake!!!\n");
     int64_t update = INT64_MAX;
     for (struct list_elem *e = list_begin(&sleep_list); e != list_end(&sleep_list);)
     {
         struct thread *t = list_entry(e, struct thread, elem);
-        // printf("wakeup tick :: %d\n", t->wakeup_tick);
-        // printf("ticks :: %d\n", ticks);
         if (t->wakeup_tick <= ticks)
         {
             e = list_remove(e);
